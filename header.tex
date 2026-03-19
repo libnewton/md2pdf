@@ -1,0 +1,200 @@
+\ifdefined\pdfinfoomitdate
+  \pdfinfoomitdate=1
+\fi
+\ifdefined\pdfsuppressptexinfo
+  \pdfsuppressptexinfo=-1
+\fi
+\ifdefined\pdftrailerid
+  \pdftrailerid{}
+\fi
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\makeatletter
+\@ifundefined{Shaded}{\newenvironment{Shaded}{}{}}{}
+\makeatother
+\ExplSyntaxOn
+\cs_if_exist:NF \tbl_save_outer_table_cols:
+  { \cs_new_protected:Npn \tbl_save_outer_table_cols: {} }
+\ExplSyntaxOff
+\usepackage{mathtools}
+\usepackage{iftex}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{colortbl}
+
+\renewcommand{\bfdefault}{sb}
+
+\renewcommand{\labelitemii}{\textopenbullet}
+\renewcommand{\labelitemiii}{\raisebox{0.2ex}{\scriptsize$\blacksquare$}}
+\renewcommand{\labelitemiv}{\raisebox{0.2ex}{\scriptsize$\blacksquare$}}
+
+\setlist[enumerate,1]{label=\arabic*.,leftmargin=*}
+\setlist[enumerate,2]{label=\alph*.,leftmargin=*}
+\setlist[enumerate,3]{label=\roman*.,leftmargin=*}
+\setlist[enumerate,4]{label=\roman*.,leftmargin=*}
+\setlist[itemize,2]{label=\textopenbullet}
+\setlist[itemize,3]{label=\raisebox{0.2ex}{\scriptsize$\blacksquare$}}
+\setlist[itemize,4]{label=\raisebox{0.2ex}{\scriptsize$\blacksquare$}}
+
+\ifPDFTeX
+  \DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+  \DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}
+\else
+  \usepackage{newunicodechar}
+  \newunicodechar{→}{\ensuremath{\rightarrow}}
+  \newunicodechar{≈}{\ensuremath{\approx}}
+\fi
+
+\RedeclareSectionCommand[
+  beforeskip=1.25\baselineskip,
+  afterskip=0.5\baselineskip
+]{paragraph}
+
+\RedeclareSectionCommand[
+  beforeskip=1.0\baselineskip,
+  afterskip=0.4\baselineskip
+]{subparagraph}
+
+\usepackage[most]{tcolorbox}
+
+\definecolor{linktextblue}{HTML}{2E6DA4}
+\definecolor{tableheaderbg}{HTML}{F0F2F4}
+\definecolor{table-rule-color}{HTML}{999999}
+\definecolor{calloutsuccessbg}{HTML}{EAF6EC}
+\definecolor{calloutsuccessborder}{HTML}{2F7D4A}
+\definecolor{calloutwarningbg}{HTML}{FFF4DE}
+\definecolor{calloutwarningborder}{HTML}{B87400}
+\definecolor{callouttipbg}{HTML}{E8F4FF}
+\definecolor{callouttipborder}{HTML}{0E6BA8}
+\definecolor{calloutinfobg}{HTML}{F1EFFC}
+\definecolor{calloutinfoborder}{HTML}{5D4E9D}
+\definecolor{codeblockbg}{HTML}{F4F7FA}
+\definecolor{codeblockborder}{HTML}{D9D9D9}
+\definecolor{codelinenumber}{HTML}{7A7A7A}
+\definecolor{inlinecodebg}{HTML}{F3F3F3}
+\definecolor{inlinecodefg}{HTML}{000000}
+
+\newtcbox{\inlinecodebox}{
+  on line,
+  box align=base,
+  nobeforeafter,
+  enhanced,
+  colback=inlinecodebg,
+  colframe=inlinecodebg,
+  boxrule=0pt,
+  arc=2pt,
+  left=3pt,
+  right=3pt,
+  top=1pt,
+  bottom=1pt
+}
+
+\newcommand{\inlinecode}[1]{%
+  \inlinecodebox{%
+    \textcolor{inlinecodefg}{%
+      \normalfont\mdseries\ttfamily\fontsize{9.85pt}{11pt}\selectfont #1%
+    }%
+  }%
+}
+
+\AtBeginDocument{%
+  \definecolor{shadecolor}{HTML}{F4F7FA}%
+  \setlength{\FrameSep}{0pt}%
+  \renewcommand{\theFancyVerbLine}{\sffamily\textcolor{codelinenumber}{\scriptsize\arabic{FancyVerbLine}}}%
+  \fvset{numbersep=9pt,xleftmargin=2.3em}%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[
+      enhanced,
+      breakable,
+      colback=codeblockbg,
+      colframe=codeblockborder,
+      boxrule=0.45pt,
+      arc=1mm,
+      left=5pt,
+      right=5pt,
+      top=6pt,
+      bottom=6pt,
+      boxsep=0pt,
+      before skip=8pt,
+      after skip=8pt
+    ]%
+  }{\end{tcolorbox}}%
+}
+
+
+\newtcolorbox{successbox}{
+  enhanced,
+  breakable,
+  colback=calloutsuccessbg,
+  colframe=calloutsuccessborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\newtcolorbox{warningbox}{
+  enhanced,
+  breakable,
+  colback=calloutwarningbg,
+  colframe=calloutwarningborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\newtcolorbox{tipbox}{
+  enhanced,
+  breakable,
+  colback=callouttipbg,
+  colframe=callouttipborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\newtcolorbox{infobox}{
+  enhanced,
+  breakable,
+  colback=calloutinfobg,
+  colframe=calloutinfoborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\AtBeginDocument{%
+  \hypersetup{%
+    pdfcreator={},%
+    pdfproducer={},%
+    pdfinfo={%
+      /CreationDate ()%
+      /ModDate ()%
+    }%
+  }%
+}

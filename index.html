@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>md2pdf - Markdown to PDF in your browser</title>
+  <meta name="description" content="Convert Markdown to PDF locally in your browser with Pandoc and SwiftLaTeX. Includes live preview, image handling, and no upload step." />
+  <meta name="application-name" content="md2pdf" />
+  <meta name="theme-color" content="#eff2f6" />
+  <meta name="color-scheme" content="light" />
+  <link rel="canonical" href="https://md2pdf.codeberg.page/" />
+  <link rel="icon" href="assets/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="md2pdf" />
+  <meta property="og:title" content="md2pdf - Markdown to PDF in your browser" />
+  <meta property="og:description" content="A browser-only Markdown to PDF tool powered by Pandoc and SwiftLaTeX, with live preview and local image assets." />
+  <meta property="og:url" content="https://md2pdf.codeberg.page/" />
+  <meta property="og:image" content="https://md2pdf.codeberg.page/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="md2pdf social card" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="md2pdf - Markdown to PDF in your browser" />
+  <meta name="twitter:description" content="Local Markdown to PDF conversion with Pandoc, SwiftLaTeX, live preview, and image support." />
+  <meta name="twitter:image" content="https://md2pdf.codeberg.page/assets/og-image.png" />
+  <meta name="twitter:image:alt" content="md2pdf social card" />
+  <link rel="stylesheet" href="vendor/codemirror/lib/codemirror.css" />
+  <link rel="stylesheet" href="vendor/easymde/easymde.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="page">
+
+
+    <main class="workspace">
+      <section class="panel panel-editor">
+        <div class="panel-header">
+          <div class="actions">
+            <button id="buildBtn" type="button">Build PDF</button>
+            <a id="downloadBtn" href="#" class="ghost" download="document.pdf" hidden>Download</a>
+            <label class="checkbox-label">
+              <input type="checkbox" id="noPageNumbers" />
+              Hide page numbers
+            </label>
+            <span id="status" aria-live="polite">Loading engine...</span>
+          </div>
+          <div class="panel-header-side">
+            <button id="resetWorkspaceBtn" type="button" class="link-button">Reset workspace</button>
+            <p class="panel-slogan">Runs fully in your browser. <a href="https://github.com/libnewton/md2pdf" target="_blank" referrerpolicy="no-referrer">How?</a></p>
+          </div>
+        </div>
+
+        <div class="editor-shell">
+          <textarea id="markdown" placeholder="# Start typing markdown here..."></textarea>
+        </div>
+      </section>
+
+      <section class="panel panel-preview">
+        <div class="library-card">
+          <div class="library-header">
+            <div>
+              <h2>Image Library</h2>
+              <p>Paste, drop, or double-click to browse for image embeds and aliases.</p>
+            </div>
+          </div>
+
+          <input id="libraryFileInput" type="file" accept="image/*" multiple hidden />
+
+          <div id="libraryDropzone" class="library-dropzone" tabindex="0">
+            Drop images here, paste, or double-click to browse.
+          </div>
+
+          <div id="imageLibrary" class="image-library" aria-live="polite"></div>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-header">
+            <h2>PDF Preview</h2>
+          </div>
+          <div class="preview-frame-wrap">
+            <iframe id="pdfFrame" title="PDF preview" allowfullscreen></iframe>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="errorModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-content" role="document">
+      <div class="modal-header">
+        <h2>Build Error</h2>
+        <button id="errorModalClose" type="button" title="Close">x</button>
+      </div>
+      <pre id="errorLogs" class="modal-body" tabindex="0"></pre>
+    </div>
+  </div>
+
+  <script src="vendor/codemirror/lib/codemirror.js"></script>
+  <script src="vendor/codemirror/addon/mode/overlay.js"></script>
+  <script src="vendor/codemirror/addon/mode/multiplex.js"></script>
+  <script src="vendor/codemirror/addon/mode/simple.js"></script>
+  <script src="vendor/codemirror/mode/meta.js"></script>
+  <script src="vendor/codemirror/mode/gfm/gfm.js"></script>
+  <script src="vendor/codemirror/mode/xml/xml.js"></script>
+  <script src="vendor/codemirror/mode/javascript/javascript.js"></script>
+  <script src="vendor/codemirror/mode/css/css.js"></script>
+  <script src="vendor/codemirror/mode/python/python.js"></script>
+  <script src="vendor/codemirror/mode/shell/shell.js"></script>
+  <script src="vendor/codemirror/mode/yaml/yaml.js"></script>
+  <script src="vendor/codemirror/mode/markdown/markdown.js"></script>
+  <script src="vendor/codemirror/mode/go/go.js"></script>
+  <script src="vendor/codemirror/mode/rust/rust.js"></script>
+  <script src="vendor/easymde/easymde.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@bjorn3/browser_wasi_shim": "./shim.js"
+      }
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>
