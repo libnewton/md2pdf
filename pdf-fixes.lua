@@ -448,9 +448,206 @@ function Pandoc(doc)
   return doc
 end
 
+-- Map of Unicode codepoints to LaTeX replacements.
+-- Characters listed here will be substituted at the Pandoc AST level so that
+-- LaTeX never sees the raw UTF-8 bytes (which would cause inputenc errors).
+-- Characters NOT in this table but above U+007F are replaced with a safe
+-- placeholder so that compilation always succeeds.
+local unicode_to_latex = {
+  -- Arrows
+  [0x2190] = "\\(\\leftarrow\\)",
+  [0x2191] = "\\(\\uparrow\\)",
+  [0x2192] = "\\(\\rightarrow\\)",
+  [0x2193] = "\\(\\downarrow\\)",
+  [0x2194] = "\\(\\leftrightarrow\\)",
+  [0x2195] = "\\(\\updownarrow\\)",
+  [0x2196] = "\\(\\nwarrow\\)",
+  [0x2197] = "\\(\\nearrow\\)",
+  [0x2198] = "\\(\\searrow\\)",
+  [0x2199] = "\\(\\swarrow\\)",
+  [0x21D0] = "\\(\\Leftarrow\\)",
+  [0x21D2] = "\\(\\Rightarrow\\)",
+  [0x21D4] = "\\(\\Leftrightarrow\\)",
+  [0x21A6] = "\\(\\mapsto\\)",
+  -- Math operators and relations
+  [0x00B1] = "\\(\\pm\\)",
+  [0x00B7] = "\\(\\cdot\\)",
+  [0x00D7] = "\\(\\times\\)",
+  [0x00F7] = "\\(\\div\\)",
+  [0x2200] = "\\(\\forall\\)",
+  [0x2203] = "\\(\\exists\\)",
+  [0x2205] = "\\(\\emptyset\\)",
+  [0x2208] = "\\(\\in\\)",
+  [0x2209] = "\\(\\notin\\)",
+  [0x220B] = "\\(\\ni\\)",
+  [0x2211] = "\\(\\sum\\)",
+  [0x2212] = "\\(-\\)",
+  [0x2213] = "\\(\\mp\\)",
+  [0x2217] = "\\(\\ast\\)",
+  [0x221A] = "\\(\\surd\\)",
+  [0x221E] = "\\(\\infty\\)",
+  [0x2220] = "\\(\\angle\\)",
+  [0x2227] = "\\(\\land\\)",
+  [0x2228] = "\\(\\lor\\)",
+  [0x2229] = "\\(\\cap\\)",
+  [0x222A] = "\\(\\cup\\)",
+  [0x222B] = "\\(\\int\\)",
+  [0x2234] = "\\(\\therefore\\)",
+  [0x2235] = "\\(\\because\\)",
+  [0x2248] = "\\(\\approx\\)",
+  [0x2260] = "\\(\\neq\\)",
+  [0x2261] = "\\(\\equiv\\)",
+  [0x2264] = "\\(\\leq\\)",
+  [0x2265] = "\\(\\geq\\)",
+  [0x226A] = "\\(\\ll\\)",
+  [0x226B] = "\\(\\gg\\)",
+  [0x2282] = "\\(\\subset\\)",
+  [0x2283] = "\\(\\supset\\)",
+  [0x2286] = "\\(\\subseteq\\)",
+  [0x2287] = "\\(\\supseteq\\)",
+  [0x22A5] = "\\(\\perp\\)",
+  [0x22C5] = "\\(\\cdot\\)",
+  [0x2295] = "\\(\\oplus\\)",
+  [0x2297] = "\\(\\otimes\\)",
+  -- Greek letters
+  [0x0391] = "A",
+  [0x0392] = "B",
+  [0x0393] = "\\(\\Gamma\\)",
+  [0x0394] = "\\(\\Delta\\)",
+  [0x0398] = "\\(\\Theta\\)",
+  [0x039B] = "\\(\\Lambda\\)",
+  [0x039E] = "\\(\\Xi\\)",
+  [0x03A0] = "\\(\\Pi\\)",
+  [0x03A3] = "\\(\\Sigma\\)",
+  [0x03A6] = "\\(\\Phi\\)",
+  [0x03A8] = "\\(\\Psi\\)",
+  [0x03A9] = "\\(\\Omega\\)",
+  [0x03B1] = "\\(\\alpha\\)",
+  [0x03B2] = "\\(\\beta\\)",
+  [0x03B3] = "\\(\\gamma\\)",
+  [0x03B4] = "\\(\\delta\\)",
+  [0x03B5] = "\\(\\varepsilon\\)",
+  [0x03B6] = "\\(\\zeta\\)",
+  [0x03B7] = "\\(\\eta\\)",
+  [0x03B8] = "\\(\\theta\\)",
+  [0x03B9] = "\\(\\iota\\)",
+  [0x03BA] = "\\(\\kappa\\)",
+  [0x03BB] = "\\(\\lambda\\)",
+  [0x03BC] = "\\(\\mu\\)",
+  [0x03BD] = "\\(\\nu\\)",
+  [0x03BE] = "\\(\\xi\\)",
+  [0x03C0] = "\\(\\pi\\)",
+  [0x03C1] = "\\(\\rho\\)",
+  [0x03C3] = "\\(\\sigma\\)",
+  [0x03C4] = "\\(\\tau\\)",
+  [0x03C5] = "\\(\\upsilon\\)",
+  [0x03C6] = "\\(\\varphi\\)",
+  [0x03C7] = "\\(\\chi\\)",
+  [0x03C8] = "\\(\\psi\\)",
+  [0x03C9] = "\\(\\omega\\)",
+  -- Dashes, spaces, quotes
+  [0x2013] = "--",
+  [0x2014] = "---",
+  [0x2018] = "`",
+  [0x2019] = "'",
+  [0x201C] = "``",
+  [0x201D] = "''",
+  [0x2026] = "\\ldots{}",
+  [0x00A0] = "~",
+  [0x2002] = "\\enspace{}",
+  [0x2003] = "\\quad{}",
+  -- Miscellaneous symbols
+  [0x00A9] = "\\textcopyright{}",
+  [0x00AE] = "\\textregistered{}",
+  [0x2122] = "\\texttrademark{}",
+  [0x00B0] = "\\textdegree{}",
+  [0x00B2] = "\\textsuperscript{2}",
+  [0x00B3] = "\\textsuperscript{3}",
+  [0x00B9] = "\\textsuperscript{1}",
+  [0x2022] = "\\textbullet{}",
+  [0x2032] = "\\(\\prime\\)",
+  [0x2033] = "\\(\\prime\\prime\\)",
+  -- Currency
+  [0x20AC] = "\\texteuro{}",
+  [0x00A3] = "\\textsterling{}",
+  [0x00A5] = "\\textyen{}",
+  -- Check marks and crosses
+  [0x2713] = "\\(\\checkmark\\)",
+  [0x2714] = "\\(\\checkmark\\)",
+  [0x2717] = "\\(\\times\\)",
+  [0x2718] = "\\(\\times\\)",
+  -- Ballot boxes (task list checkboxes)
+  [0x2610] = "\\mdcheckbox{}",
+  [0x2611] = "\\mdcheckboxchecked{}",
+  [0x2612] = "\\mdcheckboxchecked{}",
+  -- Geometric shapes
+  [0x25A0] = "\\(\\blacksquare\\)",
+  [0x25A1] = "\\(\\square\\)",
+  [0x25CB] = "\\(\\circ\\)",
+  [0x25CF] = "\\(\\bullet\\)",
+  [0x25B2] = "\\(\\blacktriangle\\)",
+  [0x25B6] = "\\(\\triangleright\\)",
+  [0x25BC] = "\\(\\blacktriangledown\\)",
+  [0x25C0] = "\\(\\triangleleft\\)",
+  [0x2605] = "\\(\\bigstar\\)",
+  -- Superscript digits
+  [0x2070] = "\\textsuperscript{0}",
+  [0x2074] = "\\textsuperscript{4}",
+  [0x2075] = "\\textsuperscript{5}",
+  [0x2076] = "\\textsuperscript{6}",
+  [0x2077] = "\\textsuperscript{7}",
+  [0x2078] = "\\textsuperscript{8}",
+  [0x2079] = "\\textsuperscript{9}",
+  -- Subscript digits
+  [0x2080] = "\\textsubscript{0}",
+  [0x2081] = "\\textsubscript{1}",
+  [0x2082] = "\\textsubscript{2}",
+  [0x2083] = "\\textsubscript{3}",
+  [0x2084] = "\\textsubscript{4}",
+  [0x2085] = "\\textsubscript{5}",
+  [0x2086] = "\\textsubscript{6}",
+  [0x2087] = "\\textsubscript{7}",
+  [0x2088] = "\\textsubscript{8}",
+  [0x2089] = "\\textsubscript{9}",
+}
+
+-- Characters in the Latin-1 supplement (U+00C0..U+00FF) are generally handled
+-- by T1 fontenc + inputenc utf8, so we only need to worry about codepoints
+-- above that range (plus a few specific ones already in the table above).
+local function replace_unicode_for_latex(text)
+  local out = {}
+  local changed = false
+  for _, codepoint in utf8.codes(text) do
+    local replacement = unicode_to_latex[codepoint]
+    if replacement then
+      out[#out + 1] = replacement
+      changed = true
+    elseif codepoint > 0x024F then
+      -- Beyond Latin Extended-B: not safe for inputenc, replace with placeholder
+      out[#out + 1] = "?"
+      changed = true
+    else
+      out[#out + 1] = utf8.char(codepoint)
+    end
+  end
+  if changed then
+    return table.concat(out)
+  end
+  return nil
+end
+
 function Str(el)
-  if FORMAT:match("latex") and el.text == "\\n" then
+  if not FORMAT:match("latex") then
+    return nil
+  end
+
+  if el.text == "\\n" then
     return {}
+  end
+
+  local replaced = replace_unicode_for_latex(el.text)
+  if replaced then
+    return pandoc.RawInline("latex", replaced)
   end
 end
 
@@ -484,7 +681,15 @@ local function escape_inline_code(text)
   local out = {}
   for _, codepoint in utf8.codes(text) do
     local ch = utf8.char(codepoint)
-    out[#out + 1] = replacements[ch] or ch
+    if replacements[ch] then
+      out[#out + 1] = replacements[ch]
+    elseif unicode_to_latex[codepoint] then
+      out[#out + 1] = unicode_to_latex[codepoint]
+    elseif codepoint > 0x024F then
+      out[#out + 1] = "?"
+    else
+      out[#out + 1] = ch
+    end
   end
   return table.concat(out)
 end
@@ -653,6 +858,91 @@ function Div(el)
   return out
 end
 
+local function get_task_checkbox_cp(item)
+  local first_block = item[1]
+  if not first_block then
+    return nil
+  end
+  if first_block.t ~= "Plain" and first_block.t ~= "Para" then
+    return nil
+  end
+  local first_inline = first_block.content[1]
+  if not first_inline or first_inline.t ~= "Str" then
+    return nil
+  end
+  local cp = utf8.codepoint(first_inline.text, 1, 1)
+  if cp == 0x2610 or cp == 0x2611 or cp == 0x2612 then
+    return cp
+  end
+  return nil
+end
+
+local function strip_task_checkbox(item)
+  local first_block = item[1]
+  local inlines = first_block.content
+  local text = inlines[1].text
+
+  -- Remove the first codepoint (the checkbox character)
+  local rest = ""
+  local skipped = false
+  for _, c in utf8.codes(text) do
+    if skipped then
+      rest = rest .. utf8.char(c)
+    else
+      skipped = true
+    end
+  end
+
+  if rest == "" then
+    inlines:remove(1)
+  else
+    inlines[1] = pandoc.Str(rest)
+  end
+
+  -- Remove leading space after checkbox
+  if #inlines > 0 and inlines[1].t == "Space" then
+    inlines:remove(1)
+  end
+end
+
+function BulletList(el)
+  if not FORMAT:match("latex") then
+    return nil
+  end
+
+  local has_tasks = false
+  for _, item in ipairs(el.content) do
+    if get_task_checkbox_cp(item) then
+      has_tasks = true
+      break
+    end
+  end
+
+  if not has_tasks then
+    return nil
+  end
+
+  local blocks = pandoc.List:new()
+  blocks:insert(pandoc.RawBlock("latex", "\\begin{itemize}\\tightlist"))
+
+  for _, item in ipairs(el.content) do
+    local cp = get_task_checkbox_cp(item)
+    if cp then
+      local checkbox = (cp == 0x2610) and "\\mdcheckbox" or "\\mdcheckboxchecked"
+      strip_task_checkbox(item)
+      blocks:insert(pandoc.RawBlock("latex", "\\item[" .. checkbox .. "]"))
+    else
+      blocks:insert(pandoc.RawBlock("latex", "\\item"))
+    end
+    for _, block in ipairs(item) do
+      blocks:insert(block)
+    end
+  end
+
+  blocks:insert(pandoc.RawBlock("latex", "\\end{itemize}"))
+  return blocks
+end
+
 function RawBlock(el)
   if not FORMAT:match("latex") or el.format ~= "latex" then
     return nil
@@ -672,6 +962,7 @@ return {
   CodeBlock = CodeBlock,
   Image = Image,
   Para = Para,
+  BulletList = BulletList,
   BlockQuote = BlockQuote,
   Table = Table,
   Div = Div,

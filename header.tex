@@ -43,13 +43,218 @@
 \setlist[itemize,4]{label=\raisebox{0.2ex}{\scriptsize$\blacksquare$}}
 
 \ifPDFTeX
+  % Arrows
+  \DeclareUnicodeCharacter{2190}{\ensuremath{\leftarrow}}
+  \DeclareUnicodeCharacter{2191}{\ensuremath{\uparrow}}
   \DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+  \DeclareUnicodeCharacter{2193}{\ensuremath{\downarrow}}
+  \DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}
+  \DeclareUnicodeCharacter{2195}{\ensuremath{\updownarrow}}
+  \DeclareUnicodeCharacter{2196}{\ensuremath{\nwarrow}}
+  \DeclareUnicodeCharacter{2197}{\ensuremath{\nearrow}}
+  \DeclareUnicodeCharacter{2198}{\ensuremath{\searrow}}
+  \DeclareUnicodeCharacter{2199}{\ensuremath{\swarrow}}
+  \DeclareUnicodeCharacter{21D0}{\ensuremath{\Leftarrow}}
+  \DeclareUnicodeCharacter{21D2}{\ensuremath{\Rightarrow}}
+  \DeclareUnicodeCharacter{21D4}{\ensuremath{\Leftrightarrow}}
+  \DeclareUnicodeCharacter{21A6}{\ensuremath{\mapsto}}
+  % Math operators and relations
+  \DeclareUnicodeCharacter{00B1}{\ensuremath{\pm}}
+  \DeclareUnicodeCharacter{00B7}{\ensuremath{\cdot}}
+  \DeclareUnicodeCharacter{00D7}{\ensuremath{\times}}
+  \DeclareUnicodeCharacter{00F7}{\ensuremath{\div}}
+  \DeclareUnicodeCharacter{2200}{\ensuremath{\forall}}
+  \DeclareUnicodeCharacter{2203}{\ensuremath{\exists}}
+  \DeclareUnicodeCharacter{2205}{\ensuremath{\emptyset}}
+  \DeclareUnicodeCharacter{2208}{\ensuremath{\in}}
+  \DeclareUnicodeCharacter{2209}{\ensuremath{\notin}}
+  \DeclareUnicodeCharacter{220B}{\ensuremath{\ni}}
+  \DeclareUnicodeCharacter{2211}{\ensuremath{\sum}}
+  \DeclareUnicodeCharacter{2212}{\ensuremath{-}}
+  \DeclareUnicodeCharacter{2213}{\ensuremath{\mp}}
+  \DeclareUnicodeCharacter{2217}{\ensuremath{\ast}}
+  \DeclareUnicodeCharacter{221A}{\ensuremath{\sqrt{}}}
+  \DeclareUnicodeCharacter{221E}{\ensuremath{\infty}}
+  \DeclareUnicodeCharacter{2220}{\ensuremath{\angle}}
+  \DeclareUnicodeCharacter{2227}{\ensuremath{\land}}
+  \DeclareUnicodeCharacter{2228}{\ensuremath{\lor}}
+  \DeclareUnicodeCharacter{2229}{\ensuremath{\cap}}
+  \DeclareUnicodeCharacter{222A}{\ensuremath{\cup}}
+  \DeclareUnicodeCharacter{222B}{\ensuremath{\int}}
+  \DeclareUnicodeCharacter{2234}{\ensuremath{\therefore}}
+  \DeclareUnicodeCharacter{2235}{\ensuremath{\because}}
   \DeclareUnicodeCharacter{2248}{\ensuremath{\approx}}
+  \DeclareUnicodeCharacter{2260}{\ensuremath{\neq}}
+  \DeclareUnicodeCharacter{2261}{\ensuremath{\equiv}}
+  \DeclareUnicodeCharacter{2264}{\ensuremath{\leq}}
+  \DeclareUnicodeCharacter{2265}{\ensuremath{\geq}}
+  \DeclareUnicodeCharacter{226A}{\ensuremath{\ll}}
+  \DeclareUnicodeCharacter{226B}{\ensuremath{\gg}}
+  \DeclareUnicodeCharacter{2282}{\ensuremath{\subset}}
+  \DeclareUnicodeCharacter{2283}{\ensuremath{\supset}}
+  \DeclareUnicodeCharacter{2286}{\ensuremath{\subseteq}}
+  \DeclareUnicodeCharacter{2287}{\ensuremath{\supseteq}}
+  \DeclareUnicodeCharacter{22A5}{\ensuremath{\perp}}
+  \DeclareUnicodeCharacter{22C5}{\ensuremath{\cdot}}
+  \DeclareUnicodeCharacter{2295}{\ensuremath{\oplus}}
+  \DeclareUnicodeCharacter{2297}{\ensuremath{\otimes}}
+  % Greek letters
+  \DeclareUnicodeCharacter{0391}{A}
+  \DeclareUnicodeCharacter{0392}{B}
+  \DeclareUnicodeCharacter{0393}{\ensuremath{\Gamma}}
+  \DeclareUnicodeCharacter{0394}{\ensuremath{\Delta}}
+  \DeclareUnicodeCharacter{0398}{\ensuremath{\Theta}}
+  \DeclareUnicodeCharacter{039B}{\ensuremath{\Lambda}}
+  \DeclareUnicodeCharacter{039E}{\ensuremath{\Xi}}
+  \DeclareUnicodeCharacter{03A0}{\ensuremath{\Pi}}
+  \DeclareUnicodeCharacter{03A3}{\ensuremath{\Sigma}}
+  \DeclareUnicodeCharacter{03A6}{\ensuremath{\Phi}}
+  \DeclareUnicodeCharacter{03A8}{\ensuremath{\Psi}}
+  \DeclareUnicodeCharacter{03A9}{\ensuremath{\Omega}}
+  \DeclareUnicodeCharacter{03B1}{\ensuremath{\alpha}}
+  \DeclareUnicodeCharacter{03B2}{\ensuremath{\beta}}
+  \DeclareUnicodeCharacter{03B3}{\ensuremath{\gamma}}
+  \DeclareUnicodeCharacter{03B4}{\ensuremath{\delta}}
+  \DeclareUnicodeCharacter{03B5}{\ensuremath{\varepsilon}}
+  \DeclareUnicodeCharacter{03B6}{\ensuremath{\zeta}}
+  \DeclareUnicodeCharacter{03B7}{\ensuremath{\eta}}
+  \DeclareUnicodeCharacter{03B8}{\ensuremath{\theta}}
+  \DeclareUnicodeCharacter{03B9}{\ensuremath{\iota}}
+  \DeclareUnicodeCharacter{03BA}{\ensuremath{\kappa}}
+  \DeclareUnicodeCharacter{03BB}{\ensuremath{\lambda}}
+  \DeclareUnicodeCharacter{03BC}{\ensuremath{\mu}}
+  \DeclareUnicodeCharacter{03BD}{\ensuremath{\nu}}
+  \DeclareUnicodeCharacter{03BE}{\ensuremath{\xi}}
+  \DeclareUnicodeCharacter{03C0}{\ensuremath{\pi}}
+  \DeclareUnicodeCharacter{03C1}{\ensuremath{\rho}}
+  \DeclareUnicodeCharacter{03C3}{\ensuremath{\sigma}}
+  \DeclareUnicodeCharacter{03C4}{\ensuremath{\tau}}
+  \DeclareUnicodeCharacter{03C5}{\ensuremath{\upsilon}}
+  \DeclareUnicodeCharacter{03C6}{\ensuremath{\varphi}}
+  \DeclareUnicodeCharacter{03C7}{\ensuremath{\chi}}
+  \DeclareUnicodeCharacter{03C8}{\ensuremath{\psi}}
+  \DeclareUnicodeCharacter{03C9}{\ensuremath{\omega}}
+  % Dashes, spaces, quotes
+  \DeclareUnicodeCharacter{2013}{--}
+  \DeclareUnicodeCharacter{2014}{---}
+  \DeclareUnicodeCharacter{2018}{`}
+  \DeclareUnicodeCharacter{2019}{'}
+  \DeclareUnicodeCharacter{201C}{``}
+  \DeclareUnicodeCharacter{201D}{''}
+  \DeclareUnicodeCharacter{2026}{\ldots}
+  \DeclareUnicodeCharacter{00A0}{~}
+  \DeclareUnicodeCharacter{2002}{\enspace}
+  \DeclareUnicodeCharacter{2003}{\quad}
+  % Miscellaneous symbols
+  \DeclareUnicodeCharacter{00A9}{\textcopyright}
+  \DeclareUnicodeCharacter{00AE}{\textregistered}
+  \DeclareUnicodeCharacter{2122}{\texttrademark}
+  \DeclareUnicodeCharacter{00B0}{\textdegree}
+  \DeclareUnicodeCharacter{00B2}{\textsuperscript{2}}
+  \DeclareUnicodeCharacter{00B3}{\textsuperscript{3}}
+  \DeclareUnicodeCharacter{00B9}{\textsuperscript{1}}
+  \DeclareUnicodeCharacter{00BC}{\textonequarter}
+  \DeclareUnicodeCharacter{00BD}{\textonehalf}
+  \DeclareUnicodeCharacter{00BE}{\textthreequarters}
+  \DeclareUnicodeCharacter{2022}{\textbullet}
+  \DeclareUnicodeCharacter{2032}{\ensuremath{\prime}}
+  \DeclareUnicodeCharacter{2033}{\ensuremath{\prime\prime}}
+  % Currency
+  \DeclareUnicodeCharacter{20AC}{\texteuro}
+  \DeclareUnicodeCharacter{00A3}{\textsterling}
+  \DeclareUnicodeCharacter{00A5}{\textyen}
+  % Check marks and crosses
+  \DeclareUnicodeCharacter{2713}{\checkmark}
+  \DeclareUnicodeCharacter{2714}{\checkmark}
+  \DeclareUnicodeCharacter{2717}{\ensuremath{\times}}
+  \DeclareUnicodeCharacter{2718}{\ensuremath{\times}}
+  % Ballot boxes (task list checkboxes)
+  \DeclareUnicodeCharacter{2610}{\mdcheckbox}
+  \DeclareUnicodeCharacter{2611}{\mdcheckboxchecked}
+  \DeclareUnicodeCharacter{2612}{\mdcheckboxchecked}
+  % Box drawing / geometric
+  \DeclareUnicodeCharacter{25A0}{\ensuremath{\blacksquare}}
+  \DeclareUnicodeCharacter{25A1}{\ensuremath{\square}}
+  \DeclareUnicodeCharacter{25CB}{\ensuremath{\circ}}
+  \DeclareUnicodeCharacter{25CF}{\ensuremath{\bullet}}
+  \DeclareUnicodeCharacter{25B2}{\ensuremath{\blacktriangle}}
+  \DeclareUnicodeCharacter{25B6}{\ensuremath{\triangleright}}
+  \DeclareUnicodeCharacter{25BC}{\ensuremath{\blacktriangledown}}
+  \DeclareUnicodeCharacter{25C0}{\ensuremath{\triangleleft}}
+  \DeclareUnicodeCharacter{2605}{\ensuremath{\bigstar}}
+  % Superscript / subscript digits
+  \DeclareUnicodeCharacter{2070}{\textsuperscript{0}}
+  \DeclareUnicodeCharacter{2074}{\textsuperscript{4}}
+  \DeclareUnicodeCharacter{2075}{\textsuperscript{5}}
+  \DeclareUnicodeCharacter{2076}{\textsuperscript{6}}
+  \DeclareUnicodeCharacter{2077}{\textsuperscript{7}}
+  \DeclareUnicodeCharacter{2078}{\textsuperscript{8}}
+  \DeclareUnicodeCharacter{2079}{\textsuperscript{9}}
+  \DeclareUnicodeCharacter{2080}{\textsubscript{0}}
+  \DeclareUnicodeCharacter{2081}{\textsubscript{1}}
+  \DeclareUnicodeCharacter{2082}{\textsubscript{2}}
+  \DeclareUnicodeCharacter{2083}{\textsubscript{3}}
+  \DeclareUnicodeCharacter{2084}{\textsubscript{4}}
+  \DeclareUnicodeCharacter{2085}{\textsubscript{5}}
+  \DeclareUnicodeCharacter{2086}{\textsubscript{6}}
+  \DeclareUnicodeCharacter{2087}{\textsubscript{7}}
+  \DeclareUnicodeCharacter{2088}{\textsubscript{8}}
+  \DeclareUnicodeCharacter{2089}{\textsubscript{9}}
 \else
   \usepackage{newunicodechar}
+  % Arrows
+  \newunicodechar{←}{\ensuremath{\leftarrow}}
+  \newunicodechar{↑}{\ensuremath{\uparrow}}
   \newunicodechar{→}{\ensuremath{\rightarrow}}
+  \newunicodechar{↓}{\ensuremath{\downarrow}}
+  \newunicodechar{↔}{\ensuremath{\leftrightarrow}}
+  \newunicodechar{↕}{\ensuremath{\updownarrow}}
+  \newunicodechar{⇐}{\ensuremath{\Leftarrow}}
+  \newunicodechar{⇒}{\ensuremath{\Rightarrow}}
+  \newunicodechar{⇔}{\ensuremath{\Leftrightarrow}}
+  % Math
   \newunicodechar{≈}{\ensuremath{\approx}}
+  \newunicodechar{≠}{\ensuremath{\neq}}
+  \newunicodechar{≤}{\ensuremath{\leq}}
+  \newunicodechar{≥}{\ensuremath{\geq}}
+  \newunicodechar{±}{\ensuremath{\pm}}
+  \newunicodechar{×}{\ensuremath{\times}}
+  \newunicodechar{÷}{\ensuremath{\div}}
+  \newunicodechar{∞}{\ensuremath{\infty}}
+  \newunicodechar{∈}{\ensuremath{\in}}
+  \newunicodechar{∉}{\ensuremath{\notin}}
+  \newunicodechar{∑}{\ensuremath{\sum}}
+  \newunicodechar{√}{\ensuremath{\sqrt{}}}
+  \newunicodechar{∀}{\ensuremath{\forall}}
+  \newunicodechar{∃}{\ensuremath{\exists}}
+  \newunicodechar{∧}{\ensuremath{\land}}
+  \newunicodechar{∨}{\ensuremath{\lor}}
+  \newunicodechar{∩}{\ensuremath{\cap}}
+  \newunicodechar{∪}{\ensuremath{\cup}}
+  \newunicodechar{·}{\ensuremath{\cdot}}
+  \newunicodechar{…}{\ldots}
+  \newunicodechar{°}{\textdegree}
+  \newunicodechar{✓}{\checkmark}
+  \newunicodechar{✗}{\ensuremath{\times}}
+  \newunicodechar{★}{\ensuremath{\bigstar}}
+  \newunicodechar{☐}{\mdcheckbox}
+  \newunicodechar{☑}{\mdcheckboxchecked}
+  \newunicodechar{☒}{\mdcheckboxchecked}
 \fi
+
+% Task list checkbox commands
+\newcommand{\mdcheckbox}{%
+  \tcbox[on line,boxsep=0pt,left=0.5pt,right=0.5pt,top=0.5pt,bottom=0.5pt,%
+    colback=white,colframe=black!70,boxrule=0.55pt,arc=0.7pt,%
+    nobeforeafter,box align=base]{\phantom{\rule{6pt}{6pt}}}%
+}
+\newcommand{\mdcheckboxchecked}{%
+  \tcbox[on line,boxsep=0pt,left=0.5pt,right=0.5pt,top=0.5pt,bottom=0.5pt,%
+    colback=linktextblue,colframe=linktextblue,boxrule=0.55pt,arc=0.7pt,%
+    nobeforeafter,box align=base]{%
+    \makebox[6pt][c]{\rule{0pt}{6pt}\color{white}\fontsize{5.5pt}{5.5pt}\selectfont\checkmark}%
+  }%
+}
 
 \RedeclareSectionCommand[
   beforeskip=1.25\baselineskip,
