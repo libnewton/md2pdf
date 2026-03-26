@@ -1,8 +1,11 @@
-const TEXLIVE_ENDPOINT = "https://texlive.texlyre.org/";
+const TEXLIVE_ENDPOINT = "/texlive-assets/";
+// const TEXLIVE_ENDPOINT = "https://texlive.texlyre.org/";
 const SUPPORT_FILES = [
   "eisvogel.latex",
   "header.tex",
+  "pdf-fixes-emoji-map.lua",
   "pdf-fixes.lua",
+  "pdf-fixes-unicode-map.lua",
   "vscode-light.theme"
 ];
 
@@ -169,8 +172,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    const hostname = new URL(TEXLIVE_ENDPOINT).hostname;
-    await navigator.serviceWorker.register(`./texlive-sw.js?endpoint=${encodeURIComponent(hostname)}`, {
+    await navigator.serviceWorker.register(`./texlive-sw.js?endpoint=${encodeURIComponent(TEXLIVE_ENDPOINT)}`, {
       scope: "./"
     });
   } catch (error) {

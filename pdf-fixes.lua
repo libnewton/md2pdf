@@ -5,69 +5,19 @@ local callouts = {
   info = "Info",
 }
 
-local latex_preamble = [[
-\hypersetup{%
-  linkcolor=linktextblue,
-  urlcolor=linktextblue,
-  citecolor=linktextblue,
-  filecolor=linktextblue
-}
-\renewcommand{\textbf}[1]{{\fontseries{sb}\selectfont #1}}
-\addtokomafont{disposition}{\fontseries{sb}\selectfont}
-\renewcommand{\labelitemi}{\raisebox{0.15ex}{\normalsize$\bullet$}}
-\renewcommand{\labelitemii}{\textopenbullet}
-\renewcommand{\labelitemiii}{\raisebox{0.28ex}{\rule{0.5ex}{0.5ex}}}
-\renewcommand{\labelitemiv}{\raisebox{0.28ex}{\rule{0.5ex}{0.5ex}}}
-\setlist[enumerate,1]{label=\arabic*.,leftmargin=*}
-\setlist[enumerate,2]{label=\alph*),leftmargin=*}
-\setlist[enumerate,3]{label=\roman*),leftmargin=*}
-\setlist[enumerate,4]{label=\roman*),leftmargin=*}
-\setlist[itemize,2]{label=\textopenbullet}
-\setlist[itemize,3]{label=\raisebox{0.28ex}{\rule{0.5ex}{0.5ex}}}
-\setlist[itemize,4]{label=\raisebox{0.28ex}{\rule{0.5ex}{0.5ex}}}
-\definecolor{inlinecodefg}{HTML}{000000}
-\renewtcbox{\inlinecodebox}{
-  on line,
-  box align=base,
-  nobeforeafter,
-  enhanced,
-  colback=inlinecodebg,
-  colframe=inlinecodebg,
-  coltext=inlinecodefg,
-  boxrule=0pt,
-  arc=2pt,
-  left=2pt,
-  right=2pt,
-  top=1pt,
-  bottom=1pt
-}
-\renewcommand{\inlinecode}[1]{%
-  \inlinecodebox{%
-    \normalfont\mdseries\ttfamily\fontsize{9.9pt}{11pt}\selectfont #1%
-  }%
-}
-\newsavebox{\pandocTableBox}
-\newenvironment{tightblockquoteheading}{%
-  \begin{mdframed}[
-    rightline=false,
-    bottomline=false,
-    topline=false,
-    linewidth=3pt,
-    linecolor=blockquote-border,
-    skipabove=0pt,
-    skipbelow=0pt,
-    innerleftmargin=7pt,
-    innerrightmargin=0pt,
-    innertopmargin=2.7pt,
-    innerbottommargin=2.7pt
-  ]%
-  \begingroup
-  \color{blockquote-text}
-}{%
-  \endgroup
-  \end{mdframed}
-}
-]]
+local function load_data_file(name)
+  local ok, loaded = pcall(dofile, name)
+  if ok and type(loaded) == "table" then
+    return loaded
+  end
+
+  return {}
+end
+
+local emoji_data = load_data_file("pdf-fixes-emoji-map.lua")
+local twemoji_map = emoji_data.map or {}
+local twemoji_max_sequence_length = emoji_data.max_sequence_length or 0
+
 
 local function maybe_apply_dimensions(el)
   local title = el.title or ""
@@ -111,11 +61,62 @@ local function trim_text(text)
   return text:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+local function has_class(el, class_name)
+  for _, class in ipairs(el.classes) do
+    if class == class_name then
+      return true
+    end
+  end
+  return false
+end
+
+local function is_paragraphish(block)
+  return block.t == "Para" or block.t == "Plain"
+end
+
+local function twemoji_sequence_key(codepoints, start_index, count)
+  local parts = {}
+  for offset = 0, count - 1 do
+    parts[#parts + 1] = string.format("%x", codepoints[start_index + offset])
+  end
+  return table.concat(parts, "-")
+end
+
+local function emoji_page_at(codepoints, start_index)
+  if next(twemoji_map) == nil then
+    return nil, 0
+  end
+
+  local remaining = #codepoints - start_index + 1
+  local max_length = math.min(twemoji_max_sequence_length, remaining)
+  local page = nil
+  local length = 0
+
+  for count = 1, max_length do
+    local candidate = twemoji_sequence_key(codepoints, start_index, count)
+    if twemoji_map[candidate] then
+      page = twemoji_map[candidate]
+      length = count
+    end
+  end
+
+  return page, length
+end
+
+local function should_skip_emoji_codepoint(codepoint)
+  return codepoint == 0x200D
+    or codepoint == 0xFE0E
+    or codepoint == 0xFE0F
+    or codepoint == 0x20E3
+    or (codepoint >= 0x1F3FB and codepoint <= 0x1F3FF)
+    or (codepoint >= 0xE0020 and codepoint <= 0xE007F)
+end
+
 local function blocks_to_latex(blocks)
   return trim_text(pandoc.write(pandoc.Pandoc(blocks), "latex"))
 end
 
-local function caption_to_latex(inlines)
+local function inlines_to_latex(inlines)
   if not inlines or #inlines == 0 then
     return ""
   end
@@ -239,7 +240,7 @@ local function centered_image_blocks(image)
       image_to_latex(image),
     }
 
-    local caption = caption_to_latex(image.caption)
+    local caption = inlines_to_latex(image.caption)
     if caption ~= "" then
       lines[#lines + 1] = "\\par\\vspace{0.18em}"
       lines[#lines + 1] = "{\\fontsize{8.6pt}{10pt}\\selectfont\\color{black!62} " .. caption .. "\\par}"
@@ -416,26 +417,259 @@ local function set_ordered_list_style(el, depth)
   return el
 end
 
-local function adjust_blocks(blocks, list_depth)
+local function make_highlight_span(inlines)
+  return pandoc.Span(inlines, pandoc.Attr("", { "md-highlight" }, {}))
+end
+
+local function parse_highlight_inlines(inlines)
+  local out = pandoc.List:new()
+  local current = nil
+  local changed = false
+
+  local function append_inline(inline)
+    if current then
+      current:insert(inline)
+    else
+      out:insert(inline)
+    end
+  end
+
+  local function append_text(text)
+    if text ~= "" then
+      append_inline(pandoc.Str(text))
+    end
+  end
+
+  for _, inline in ipairs(inlines) do
+    if inline.t == "Str" then
+      local text = inline.text
+      local pos = 1
+
+      while true do
+        local marker = text:find("==", pos, true)
+        if not marker then
+          append_text(text:sub(pos))
+          break
+        end
+
+        append_text(text:sub(pos, marker - 1))
+        if current then
+          out:insert(make_highlight_span(current))
+          current = nil
+          changed = true
+        else
+          current = pandoc.List:new()
+        end
+        pos = marker + 2
+      end
+    else
+      append_inline(inline)
+    end
+  end
+
+  if current then
+    out:insert(pandoc.Str("=="))
+    for _, inline in ipairs(current) do
+      out:insert(inline)
+    end
+  end
+
+  if changed then
+    return out
+  end
+
+  return nil
+end
+
+local function is_spoiler_fence_text(text)
+  return text:match("^%+%+%+%+%+%+*$") ~= nil
+end
+
+local function spoiler_open_title(block)
+  if not is_paragraphish(block) then
+    return nil
+  end
+
+  local first = block.content and block.content[1]
+  if not first or first.t ~= "Str" or not is_spoiler_fence_text(first.text) then
+    return nil
+  end
+
+  local title = pandoc.List:new()
+  for i = 2, #block.content do
+    title:insert(block.content[i])
+  end
+  trim_inlines(title)
+
+  if #title == 0 then
+    return nil
+  end
+
+  return title
+end
+
+local function is_spoiler_open_fence(block)
+  if not is_paragraphish(block) then
+    return false
+  end
+
+  return is_spoiler_fence_text(trim_text(pandoc.utils.stringify(block.content)))
+end
+
+local function is_spoiler_close(block)
+  if not is_paragraphish(block) then
+    return false
+  end
+
+  return is_spoiler_fence_text(trim_text(pandoc.utils.stringify(block.content)))
+end
+
+local function split_block_lines(block)
+  if not is_paragraphish(block) then
+    return nil
+  end
+
+  local lines = {}
+  local current = pandoc.List:new()
+  local has_break = false
+
+  for _, inline in ipairs(block.content) do
+    if inline.t == "SoftBreak" or inline.t == "LineBreak" then
+      lines[#lines + 1] = current
+      current = pandoc.List:new()
+      has_break = true
+    else
+      current:insert(inline)
+    end
+  end
+
+  lines[#lines + 1] = current
+
+  if not has_break then
+    return nil
+  end
+
+  local has_fence = false
+  for _, line in ipairs(lines) do
+    if is_spoiler_fence_text(trim_text(pandoc.utils.stringify(line))) then
+      has_fence = true
+      break
+    end
+  end
+
+  if not has_fence then
+    return nil
+  end
+
+  local out = pandoc.List:new()
+  for _, line in ipairs(lines) do
+    trim_inlines(line)
+    if #line > 0 then
+      out:insert(pandoc.Para(line))
+    end
+  end
+
+  return out
+end
+
+local function expand_spoiler_line_blocks(blocks)
+  local out = pandoc.List:new()
+
+  for _, block in ipairs(blocks) do
+    local expanded = split_block_lines(block)
+    if expanded then
+      for _, split_block in ipairs(expanded) do
+        out:insert(split_block)
+      end
+    else
+      out:insert(block)
+    end
+  end
+
+  return out
+end
+
+local function make_spoiler_blocks(title, body)
+  local title_latex = inlines_to_latex(title)
+  local out = pandoc.List:new({
+    pandoc.RawBlock("latex", "\\noindent\\(\\blacktriangleright\\)\\enspace " .. title_latex .. "\\par"),
+    pandoc.RawBlock("latex", "\\begin{mdspoilerbody}"),
+  })
+
+  for _, block in ipairs(body) do
+    out:insert(block)
+  end
+
+  out:insert(pandoc.RawBlock("latex", "\\end{mdspoilerbody}"))
+  return out
+end
+
+local function transform_spoilers_in_blocks(blocks)
+  blocks = expand_spoiler_line_blocks(blocks)
+  local out = pandoc.List:new()
+  local i = 1
+
+  while i <= #blocks do
+    local title = spoiler_open_title(blocks[i])
+    local body_start = i + 1
+
+    if not title and is_spoiler_open_fence(blocks[i]) then
+      local next_block = blocks[i + 1]
+      if next_block and is_paragraphish(next_block) and not is_spoiler_close(next_block) then
+        title = next_block.content
+        body_start = i + 2
+      end
+    end
+
+    if title then
+      local j = body_start
+      while j <= #blocks and not is_spoiler_close(blocks[j]) do
+        j = j + 1
+      end
+
+      if j <= #blocks then
+        local body = pandoc.List:new()
+        for k = body_start, j - 1 do
+          body:insert(blocks[k])
+        end
+
+        for _, block in ipairs(make_spoiler_blocks(title, body)) do
+          out:insert(block)
+        end
+        i = j + 1
+      else
+        out:insert(blocks[i])
+        i = i + 1
+      end
+    else
+      out:insert(blocks[i])
+      i = i + 1
+    end
+  end
+
+  return out
+end
+
+local function transform_block_list(blocks, list_depth)
   for i, block in ipairs(blocks) do
     if block.t == "OrderedList" then
       block = set_ordered_list_style(block, list_depth + 1)
       for j, item in ipairs(block.content) do
-        block.content[j] = adjust_blocks(item, list_depth + 1)
+        block.content[j] = transform_block_list(item, list_depth + 1)
       end
       blocks[i] = block
     elseif block.t == "BulletList" then
       for j, item in ipairs(block.content) do
-        block.content[j] = adjust_blocks(item, list_depth + 1)
+        block.content[j] = transform_block_list(item, list_depth + 1)
       end
       blocks[i] = block
     elseif block.t == "BlockQuote" or block.t == "Div" then
-      block.content = adjust_blocks(block.content, list_depth)
+      block.content = transform_block_list(block.content, list_depth)
       blocks[i] = block
     end
   end
 
-  return blocks
+  return transform_spoilers_in_blocks(blocks)
 end
 
 function Pandoc(doc)
@@ -443,8 +677,7 @@ function Pandoc(doc)
     return doc
   end
 
-  doc.blocks = adjust_blocks(doc.blocks, 0)
-  doc.blocks:insert(1, pandoc.RawBlock("latex", latex_preamble))
+  doc.blocks = transform_block_list(doc.blocks, 0)
   return doc
 end
 
@@ -453,183 +686,47 @@ end
 -- LaTeX never sees the raw UTF-8 bytes (which would cause inputenc errors).
 -- Characters NOT in this table but above U+007F are replaced with a safe
 -- placeholder so that compilation always succeeds.
-local unicode_to_latex = {
-  -- Arrows
-  [0x2190] = "\\(\\leftarrow\\)",
-  [0x2191] = "\\(\\uparrow\\)",
-  [0x2192] = "\\(\\rightarrow\\)",
-  [0x2193] = "\\(\\downarrow\\)",
-  [0x2194] = "\\(\\leftrightarrow\\)",
-  [0x2195] = "\\(\\updownarrow\\)",
-  [0x2196] = "\\(\\nwarrow\\)",
-  [0x2197] = "\\(\\nearrow\\)",
-  [0x2198] = "\\(\\searrow\\)",
-  [0x2199] = "\\(\\swarrow\\)",
-  [0x21D0] = "\\(\\Leftarrow\\)",
-  [0x21D2] = "\\(\\Rightarrow\\)",
-  [0x21D4] = "\\(\\Leftrightarrow\\)",
-  [0x21A6] = "\\(\\mapsto\\)",
-  -- Math operators and relations
-  [0x00B1] = "\\(\\pm\\)",
-  [0x00B7] = "\\(\\cdot\\)",
-  [0x00D7] = "\\(\\times\\)",
-  [0x00F7] = "\\(\\div\\)",
-  [0x2200] = "\\(\\forall\\)",
-  [0x2203] = "\\(\\exists\\)",
-  [0x2205] = "\\(\\emptyset\\)",
-  [0x2208] = "\\(\\in\\)",
-  [0x2209] = "\\(\\notin\\)",
-  [0x220B] = "\\(\\ni\\)",
-  [0x2211] = "\\(\\sum\\)",
-  [0x2212] = "\\(-\\)",
-  [0x2213] = "\\(\\mp\\)",
-  [0x2217] = "\\(\\ast\\)",
-  [0x221A] = "\\(\\surd\\)",
-  [0x221E] = "\\(\\infty\\)",
-  [0x2220] = "\\(\\angle\\)",
-  [0x2227] = "\\(\\land\\)",
-  [0x2228] = "\\(\\lor\\)",
-  [0x2229] = "\\(\\cap\\)",
-  [0x222A] = "\\(\\cup\\)",
-  [0x222B] = "\\(\\int\\)",
-  [0x2234] = "\\(\\therefore\\)",
-  [0x2235] = "\\(\\because\\)",
-  [0x2248] = "\\(\\approx\\)",
-  [0x2260] = "\\(\\neq\\)",
-  [0x2261] = "\\(\\equiv\\)",
-  [0x2264] = "\\(\\leq\\)",
-  [0x2265] = "\\(\\geq\\)",
-  [0x226A] = "\\(\\ll\\)",
-  [0x226B] = "\\(\\gg\\)",
-  [0x2282] = "\\(\\subset\\)",
-  [0x2283] = "\\(\\supset\\)",
-  [0x2286] = "\\(\\subseteq\\)",
-  [0x2287] = "\\(\\supseteq\\)",
-  [0x22A5] = "\\(\\perp\\)",
-  [0x22C5] = "\\(\\cdot\\)",
-  [0x2295] = "\\(\\oplus\\)",
-  [0x2297] = "\\(\\otimes\\)",
-  -- Greek letters
-  [0x0391] = "A",
-  [0x0392] = "B",
-  [0x0393] = "\\(\\Gamma\\)",
-  [0x0394] = "\\(\\Delta\\)",
-  [0x0398] = "\\(\\Theta\\)",
-  [0x039B] = "\\(\\Lambda\\)",
-  [0x039E] = "\\(\\Xi\\)",
-  [0x03A0] = "\\(\\Pi\\)",
-  [0x03A3] = "\\(\\Sigma\\)",
-  [0x03A6] = "\\(\\Phi\\)",
-  [0x03A8] = "\\(\\Psi\\)",
-  [0x03A9] = "\\(\\Omega\\)",
-  [0x03B1] = "\\(\\alpha\\)",
-  [0x03B2] = "\\(\\beta\\)",
-  [0x03B3] = "\\(\\gamma\\)",
-  [0x03B4] = "\\(\\delta\\)",
-  [0x03B5] = "\\(\\varepsilon\\)",
-  [0x03B6] = "\\(\\zeta\\)",
-  [0x03B7] = "\\(\\eta\\)",
-  [0x03B8] = "\\(\\theta\\)",
-  [0x03B9] = "\\(\\iota\\)",
-  [0x03BA] = "\\(\\kappa\\)",
-  [0x03BB] = "\\(\\lambda\\)",
-  [0x03BC] = "\\(\\mu\\)",
-  [0x03BD] = "\\(\\nu\\)",
-  [0x03BE] = "\\(\\xi\\)",
-  [0x03C0] = "\\(\\pi\\)",
-  [0x03C1] = "\\(\\rho\\)",
-  [0x03C3] = "\\(\\sigma\\)",
-  [0x03C4] = "\\(\\tau\\)",
-  [0x03C5] = "\\(\\upsilon\\)",
-  [0x03C6] = "\\(\\varphi\\)",
-  [0x03C7] = "\\(\\chi\\)",
-  [0x03C8] = "\\(\\psi\\)",
-  [0x03C9] = "\\(\\omega\\)",
-  -- Dashes, spaces, quotes
-  [0x2013] = "--",
-  [0x2014] = "---",
-  [0x2018] = "`",
-  [0x2019] = "'",
-  [0x201C] = "``",
-  [0x201D] = "''",
-  [0x2026] = "\\ldots{}",
-  [0x00A0] = "~",
-  [0x2002] = "\\enspace{}",
-  [0x2003] = "\\quad{}",
-  -- Miscellaneous symbols
-  [0x00A9] = "\\textcopyright{}",
-  [0x00AE] = "\\textregistered{}",
-  [0x2122] = "\\texttrademark{}",
-  [0x00B0] = "\\textdegree{}",
-  [0x00B2] = "\\textsuperscript{2}",
-  [0x00B3] = "\\textsuperscript{3}",
-  [0x00B9] = "\\textsuperscript{1}",
-  [0x2022] = "\\textbullet{}",
-  [0x2032] = "\\(\\prime\\)",
-  [0x2033] = "\\(\\prime\\prime\\)",
-  -- Currency
-  [0x20AC] = "\\texteuro{}",
-  [0x00A3] = "\\textsterling{}",
-  [0x00A5] = "\\textyen{}",
-  -- Check marks and crosses
-  [0x2713] = "\\(\\checkmark\\)",
-  [0x2714] = "\\(\\checkmark\\)",
-  [0x2717] = "\\(\\times\\)",
-  [0x2718] = "\\(\\times\\)",
-  -- Ballot boxes (task list checkboxes)
-  [0x2610] = "\\mdcheckbox{}",
-  [0x2611] = "\\mdcheckboxchecked{}",
-  [0x2612] = "\\mdcheckboxchecked{}",
-  -- Geometric shapes
-  [0x25A0] = "\\(\\blacksquare\\)",
-  [0x25A1] = "\\(\\square\\)",
-  [0x25CB] = "\\(\\circ\\)",
-  [0x25CF] = "\\(\\bullet\\)",
-  [0x25B2] = "\\(\\blacktriangle\\)",
-  [0x25B6] = "\\(\\triangleright\\)",
-  [0x25BC] = "\\(\\blacktriangledown\\)",
-  [0x25C0] = "\\(\\triangleleft\\)",
-  [0x2605] = "\\(\\bigstar\\)",
-  -- Superscript digits
-  [0x2070] = "\\textsuperscript{0}",
-  [0x2074] = "\\textsuperscript{4}",
-  [0x2075] = "\\textsuperscript{5}",
-  [0x2076] = "\\textsuperscript{6}",
-  [0x2077] = "\\textsuperscript{7}",
-  [0x2078] = "\\textsuperscript{8}",
-  [0x2079] = "\\textsuperscript{9}",
-  -- Subscript digits
-  [0x2080] = "\\textsubscript{0}",
-  [0x2081] = "\\textsubscript{1}",
-  [0x2082] = "\\textsubscript{2}",
-  [0x2083] = "\\textsubscript{3}",
-  [0x2084] = "\\textsubscript{4}",
-  [0x2085] = "\\textsubscript{5}",
-  [0x2086] = "\\textsubscript{6}",
-  [0x2087] = "\\textsubscript{7}",
-  [0x2088] = "\\textsubscript{8}",
-  [0x2089] = "\\textsubscript{9}",
-}
+local unicode_to_latex = load_data_file("pdf-fixes-unicode-map.lua")
+
 
 -- Characters in the Latin-1 supplement (U+00C0..U+00FF) are generally handled
 -- by T1 fontenc + inputenc utf8, so we only need to worry about codepoints
 -- above that range (plus a few specific ones already in the table above).
 local function replace_unicode_for_latex(text)
+  local codepoints = {}
+  for _, codepoint in utf8.codes(text) do
+    codepoints[#codepoints + 1] = codepoint
+  end
+
   local out = {}
   local changed = false
-  for _, codepoint in utf8.codes(text) do
-    local replacement = unicode_to_latex[codepoint]
-    if replacement then
-      out[#out + 1] = replacement
+  local i = 1
+
+  while i <= #codepoints do
+    local page, length = emoji_page_at(codepoints, i)
+    if page then
+      out[#out + 1] = "\\mdemoji{" .. tostring(page) .. "}"
       changed = true
-    elseif codepoint > 0x024F then
-      -- Beyond Latin Extended-B: not safe for inputenc, replace with placeholder
-      out[#out + 1] = "?"
-      changed = true
+      i = i + length
     else
-      out[#out + 1] = utf8.char(codepoint)
+      local codepoint = codepoints[i]
+      local replacement = unicode_to_latex[codepoint]
+      if replacement then
+        out[#out + 1] = replacement
+        changed = true
+      elseif should_skip_emoji_codepoint(codepoint) then
+        changed = true
+      elseif codepoint > 0x024F then
+        -- Beyond Latin Extended-B: not safe for inputenc, replace with placeholder
+        out[#out + 1] = "?"
+        changed = true
+      else
+        out[#out + 1] = utf8.char(codepoint)
+      end
+      i = i + 1
     end
   end
+
   if changed then
     return table.concat(out)
   end
@@ -664,6 +761,74 @@ function Math(el)
   end
 end
 
+function Inlines(inlines)
+  if not FORMAT:match("latex") then
+    return nil
+  end
+
+  return parse_highlight_inlines(inlines)
+end
+
+local function is_highlight_span(el)
+  return el.t == "Span" and has_class(el, "md-highlight")
+end
+
+function Span(el)
+  if not FORMAT:match("latex") or not is_highlight_span(el) then
+    return nil
+  end
+
+  return pandoc.RawInline("latex", "\\mdhighlight{" .. inlines_to_latex(el.content) .. "}")
+end
+
+function Strikeout(el)
+  if not FORMAT:match("latex") then
+    return nil
+  end
+
+  local content = parse_highlight_inlines(el.content) or el.content
+  local has_highlight = false
+  for _, inline in ipairs(content) do
+    if is_highlight_span(inline) then
+      has_highlight = true
+      break
+    end
+  end
+
+  if not has_highlight then
+    return nil
+  end
+
+  local pieces = {}
+  local buffer = pandoc.List:new()
+
+  local function flush_buffer()
+    if #buffer == 0 then
+      return
+    end
+    pieces[#pieces + 1] = "\\st{" .. inlines_to_latex(buffer) .. "}"
+    buffer = pandoc.List:new()
+  end
+
+  for _, inline in ipairs(content) do
+    if is_highlight_span(inline) then
+      flush_buffer()
+      pieces[#pieces + 1] = "\\mdhighlight{\\st{" .. inlines_to_latex(inline.content) .. "}}"
+    elseif inline.t == "Space" then
+      flush_buffer()
+      pieces[#pieces + 1] = " "
+    elseif inline.t == "SoftBreak" or inline.t == "LineBreak" then
+      flush_buffer()
+      pieces[#pieces + 1] = "\\linebreak{}"
+    else
+      buffer:insert(inline)
+    end
+  end
+
+  flush_buffer()
+  return pandoc.RawInline("latex", table.concat(pieces))
+end
+
 local function escape_inline_code(text)
   local replacements = {
     ["\\"] = "\\textbackslash{}",
@@ -692,15 +857,6 @@ local function escape_inline_code(text)
     end
   end
   return table.concat(out)
-end
-
-local function has_class(el, class_name)
-  for _, class in ipairs(el.classes) do
-    if class == class_name then
-      return true
-    end
-  end
-  return false
 end
 
 function Code(el)
@@ -956,8 +1112,11 @@ end
 return {
   traverse = "topdown",
   Pandoc = Pandoc,
+  Inlines = Inlines,
   Str = Str,
   Math = Math,
+  Span = Span,
+  Strikeout = Strikeout,
   Code = Code,
   CodeBlock = CodeBlock,
   Image = Image,

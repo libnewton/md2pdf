@@ -308,6 +308,77 @@
   }%
 }
 
+\DeclareRobustCommand{\mdhighlight}[1]{%
+  \leavevmode
+  \begingroup
+  \setlength{\fboxsep}{1pt}%
+  \colorbox{yellow!35}{\strut #1}%
+  \endgroup
+}
+
+\providecommand{\st}[1]{%
+  \leavevmode
+  \begingroup
+  \setbox0=\hbox{#1}%
+  \dimen0=\wd0
+  \rlap{\raise0.55ex\hbox to \dimen0{\leaders\hrule height 0.08ex\hfill}}%
+  \box0%
+  \endgroup
+}
+
+\newlength{\mdemojiheight}
+\newcommand{\mdemojiscaledheight}{}
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname pdfsuppresswarningpagegroup\endcsname\relax
+\else
+  \pdfsuppresswarningpagegroup=1\relax
+\fi
+\DeclareRobustCommand{\mdemoji}[1]{%
+  \begingroup
+  \settoheight{\mdemojiheight}{X}%
+  \edef\mdemojiscaledheight{\the\dimexpr 11\mdemojiheight/10\relax}%
+  \raisebox{-.1ex}{\includegraphics[page=#1,height=\mdemojiscaledheight]{all-twemojis.pdf}}%
+  \endgroup
+}
+
+\newsavebox{\pandocTableBox}
+
+\newenvironment{tightblockquoteheading}{%
+  \begin{mdframed}[
+    rightline=false,
+    bottomline=false,
+    topline=false,
+    linewidth=3pt,
+    linecolor=blockquote-border,
+    skipabove=0pt,
+    skipbelow=0pt,
+    innerleftmargin=7pt,
+    innerrightmargin=0pt,
+    innertopmargin=2.7pt,
+    innerbottommargin=2.7pt
+  ]%
+  \begingroup
+  \color{blockquote-text}
+}{%
+  \endgroup
+  \end{mdframed}
+}
+
+\newenvironment{mdspoilerbody}{%
+  \begin{list}{}{%
+    \setlength{\leftmargin}{1.5em}%
+    \setlength{\rightmargin}{0pt}%
+    \setlength{\listparindent}{0pt}%
+    \setlength{\itemindent}{0pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
+    \setlength{\partopsep}{0pt}%
+  }%
+  \item\relax
+}{%
+  \end{list}
+}
+
 \AtBeginDocument{%
   \definecolor{shadecolor}{HTML}{F4F7FA}%
   \setlength{\FrameSep}{0pt}%
