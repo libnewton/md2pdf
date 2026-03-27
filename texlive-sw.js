@@ -69,7 +69,7 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return; // Only cache GET requests
     
     const url = new URL(event.request.url);
-    const isTexlive = url.includes("/pdftex/")
+    const isTexlive = url.pathname.includes("/pdftex/");
     const isWasm = url.pathname.endsWith('.wasm');
     
     if (isTexlive || isWasm) {

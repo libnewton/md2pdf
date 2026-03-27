@@ -363,7 +363,7 @@ function applyReplacements(markdown, replacements) {
 }
 
 function normalizeLegacyImageSizing(markdown) {
-  return markdown.replace(/!\[([^\]]*)]\(([^()\s]+)\s+=\s*(\d+)x(\d*)\s*\)/g, (_, alt, url, width, height) => {
+  return markdown.replace(/!\[([^\]]*)]\(([^()\s]+)(?:\s+(?:''|""|['"”“‘’]))?\s*=\s*(\d+)x(\d*)(?:\s*(?:''|""|['"”“‘’]))?\s*\)/g, (_, alt, url, width, height) => {
     const attrs = [`width=${width}px`];
     if (height) {
       attrs.push(`height=${height}px`);

@@ -1,5 +1,6 @@
 import { ASSET_DRAG_TYPE, createImageStore } from "./markdown-images.js";
 import { createPdfBuilder } from "./wasm-pdf.js";
+import { replaceRefs } from "./compiler-utils.js";
 
 const STORAGE_KEYS = {
   markdown: "md2pdf-content",
@@ -355,8 +356,13 @@ async function buildPdf() {
     await pdfBuilder.prepare();
 
     const sourceMarkdown = getMarkdown();
+    const refs = replaceRefs(sourceMarkdown);
     setStatus("Resolving images...");
-    const resolved = await imageStore.resolveMarkdown(sourceMarkdown);
+    const resolved = await imageStore.resolveMarkdown(refs.txt);
+
+    if (refs.bib) {
+      resolved.mediaFiles["bib.bib"] = new Blob([refs.bib], { type: "text/plain" });
+    }
 
     const result = await pdfBuilder.build({
       markdown: resolved.markdown,

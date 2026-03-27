@@ -626,7 +626,7 @@ $if(titlepage)$
 \usepackage{pagecolor}
 \usepackage{afterpage}
 $if(titlepage-background)$
-\usepackage{tikz}
+\usepackage{eso-pic}
 $endif$
 $if(geometry)$
 $else$
@@ -946,7 +946,7 @@ $if(titlepage-color)$
 \newpagecolor{titlepage-color}\afterpage{\restorepagecolor}
 $endif$
 $if(titlepage-background)$
-\tikz[remember picture,overlay] \node[inner sep=0pt] at (current page.center){\includegraphics[width=\paperwidth,height=\paperheight]{$titlepage-background$}};
+\AddToShipoutPictureBG*{\AtPageLowerLeft{\includegraphics[page=1,width=\paperwidth,height=\paperheight]{$titlepage-background$}}}
 $endif$
 \newcommand{\colorRule}[3][black]{\textcolor[HTML]{#1}{\rule{#2}{#3}}}
 \begin{flushleft}

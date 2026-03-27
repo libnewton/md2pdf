@@ -1,5 +1,4 @@
 const TEXLIVE_ENDPOINT = "/texlive-assets/";
-// const TEXLIVE_ENDPOINT = "https://texlive.texlyre.org/";
 const SUPPORT_FILES = [
   "eisvogel.latex",
   "header.tex",
@@ -9,7 +8,15 @@ const SUPPORT_FILES = [
   "vscode-light.theme"
 ];
 
-export function createPdfBuilder() {
+export function createPdfBuilder({
+  includeHeaderFooter = false,
+  extraSupportFiles = [],
+  extraFilters = [],
+  extraHeaders = [],
+  extraVariables = {},
+  implicitFigures = false,
+  runtimeFiles = []
+} = {}) {
   let preparePromise = null;
   let supportFilesPromise = null;
   let pandocModule = null;
@@ -26,17 +33,41 @@ export function createPdfBuilder() {
     return preparePromise;
   }
 
-  async function build({ markdown, hidePageNumbers, mediaFiles, onStage = () => {} }) {
+  async function build({ markdown, hidePageNumbers, mediaFiles = {}, onStage = () => {} }) {
     await prepare();
 
+    const normalizedMarkdown = normalizeLegacyMarkdown(markdown, mediaFiles);
     onStage("Converting markdown...");
-    const supportFiles = await loadSupportFiles();
-    const result = await pandocModule.convert(createPandocOptions(hidePageNumbers), markdown, {
+    const supportFiles = await loadSupportFiles(extraSupportFiles);
+    const options = createPandocOptions(hidePageNumbers, {
+      includeHeaderFooter,
+      extraFilters,
+      extraHeaders,
+      extraVariables,
+      implicitFigures,
+      hasBibliography: Boolean(mediaFiles["bib.bib"])
+    });
+
+    if (mediaFiles["bib.bib"]) {
+      options.citeproc = true;
+      options.csl = "nature.csl";
+      options.bibliography = "bib.bib";
+      options.metadata = {
+        ...(options.metadata || {}),
+        "link-citations": true
+      };
+      options.variables["link-citations"] = true;
+    }
+
+    const result = await pandocModule.convert(options, normalizedMarkdown, {
       ...supportFiles,
       ...mediaFiles
     });
 
-    const latexSource = result.stdout || "";
+    let latexSource = result.stdout || "";
+    if (mediaFiles["bib.bib"]) {
+      latexSource = prepareCiteprocLatex(latexSource);
+    }
     if (!latexSource.trim()) {
       throw new Error(formatLog(result.stderr, result.warnings));
     }
@@ -44,22 +75,27 @@ export function createPdfBuilder() {
     onStage("Compiling LaTeX...");
     texEngine.flushCache();
     texEngine.setEngineMainFile("document.tex");
-    texEngine.writeMemFSFile("/work/document.tex", latexSource);
+    writeMemFsFile(texEngine, "document.tex", latexSource);
 
-    const mediaEntries = Object.entries(mediaFiles);
-    if (mediaEntries.length) {
-      texEngine.makeMemFSFolder("media");
+    for (const runtimeFile of runtimeFiles) {
+      const response = await fetch(runtimeFile);
+      if (!response.ok) {
+        throw new Error(`Unable to load ${runtimeFile}`);
+      }
+
+      writeMemFsFile(texEngine, runtimeFile, new Uint8Array(await response.arrayBuffer()));
     }
 
-    for (const [name, blob] of mediaEntries) {
-      texEngine.writeMemFSFile(`/work/${name}`, new Uint8Array(await blob.arrayBuffer()));
+    for (const [name, blob] of Object.entries(mediaFiles)) {
+      writeMemFsFile(texEngine, name, new Uint8Array(await blob.arrayBuffer()));
     }
 
     const compiled = await texEngine.compileLaTeX();
-    const log = formatLog(result.stderr, result.warnings, compiled.log);
     if (compiled.status !== 0 || !compiled.pdf) {
-      throw new Error(log || "PDF compilation failed.");
+      const failedLog = formatLog(result.stderr, result.warnings, compiled.log);
+      throw new Error(failedLog || "PDF compilation failed.");
     }
+    const log = formatLog(result.stderr, result.warnings, compiled.log);
 
     return {
       log,
@@ -84,11 +120,16 @@ export function createPdfBuilder() {
     texEngine.setTexliveEndpoint(TEXLIVE_ENDPOINT);
   }
 
-  function loadSupportFiles() {
+  function loadSupportFiles(extraFiles) {
     if (!supportFilesPromise) {
+      const fileNames = Array.from(new Set([...SUPPORT_FILES, ...extraFiles]));
       supportFilesPromise = Promise.all(
-        SUPPORT_FILES.map(async (name) => [name, await fetchText(name)])
-      ).then((entries) => Object.fromEntries(entries));
+        fileNames.map(async (name) => [name, await fetchText(name)])
+      ).then(async (entries) => {
+        const files = Object.fromEntries(entries);
+        files["nature.csl"] = await fetchOptionalText("build-assets/nature.csl");
+        return files;
+      });
     }
 
     return supportFilesPromise;
@@ -97,7 +138,14 @@ export function createPdfBuilder() {
   return { build, prepare };
 }
 
-function createPandocOptions(hidePageNumbers) {
+function createPandocOptions(hidePageNumbers, {
+  includeHeaderFooter,
+  extraFilters,
+  extraHeaders,
+  extraVariables,
+  implicitFigures,
+  hasBibliography
+}) {
   const variables = {
     "code-block-font-size": "\\footnotesize",
     colorlinks: true,
@@ -106,19 +154,23 @@ function createPandocOptions(hidePageNumbers) {
     citecolor: "linktextblue",
     filecolor: "linktextblue",
     "listings-no-page-break": true,
-    "disable-header-and-footer": true,
-    paragraphs: true
+    paragraphs: true,
+    ...extraVariables
   };
+
+  if (!includeHeaderFooter) {
+    variables["disable-header-and-footer"] = true;
+  }
 
   if (hidePageNumbers) {
     variables.pagestyle = "empty";
   }
 
   return {
-    filters: ["pdf-fixes.lua"],
-    from: "gfm+hard_line_breaks+fenced_divs+tex_math_dollars+yaml_metadata_block",
+    filters: ["pdf-fixes.lua", ...extraFilters],
+    from: createInputFormat({ implicitFigures, hasBibliography }),
     "highlight-style": "vscode-light.theme",
-    "include-in-header": ["header.tex"],
+    "include-in-header": ["header.tex", ...extraHeaders],
     "resource-path": [".", "media"],
     standalone: true,
     template: "eisvogel.latex",
@@ -127,7 +179,35 @@ function createPandocOptions(hidePageNumbers) {
   };
 }
 
+function createInputFormat({ implicitFigures, hasBibliography }) {
+  const base = hasBibliography
+    ? "markdown+emoji+autolink_bare_uris+fenced_divs+hard_line_breaks+pipe_tables+strikeout+task_lists+tex_math_dollars+yaml_metadata_block"
+    : "gfm+emoji+hard_line_breaks+fenced_divs+tex_math_dollars+yaml_metadata_block";
+  return implicitFigures ? base : `${base}-implicit_figures`;
+}
+
+function normalizeLegacyMarkdown(markdown, mediaFiles) {
+  let normalized = String(markdown || "");
+
+  if (mediaFiles["bib.bib"]) {
+    normalized = normalized
+      .replace(/\\n(?=\s*(?:!\[|[#>*-]|\d+\.))/g, "\n")
+      .replace(/(^|\n)[ \t]*\\n[ \t]*/g, "$1");
+  }
+
+  return normalized;
+}
+
 async function fetchText(name) {
+  const response = await fetch(name);
+  if (!response.ok) {
+    throw new Error(`Unable to load ${name}`);
+  }
+
+  return response.text();
+}
+
+async function fetchOptionalText(name) {
   const response = await fetch(name);
   if (!response.ok) {
     throw new Error(`Unable to load ${name}`);
@@ -180,6 +260,26 @@ async function registerServiceWorker() {
   }
 }
 
+function writeMemFsFile(texEngine, path, value) {
+  const bytes = typeof value === "string" ? value : value;
+  ensureMemFsFolders(texEngine, path);
+  texEngine.writeMemFSFile(`/work/${path}`, bytes);
+}
+
+function ensureMemFsFolders(texEngine, path) {
+  const parts = path.split("/").slice(0, -1);
+  let current = "";
+
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    try {
+      texEngine.makeMemFSFolder(current);
+    } catch (_) {
+      // Folder may already exist.
+    }
+  }
+}
+
 function formatLog(...chunks) {
   const text = chunks
     .flatMap((chunk) => Array.isArray(chunk) ? chunk : [chunk])
@@ -201,4 +301,30 @@ function formatChunk(value) {
   }
 
   return JSON.stringify(value, null, 2);
+}
+
+function prepareCiteprocLatex(latexSource) {
+  if (latexSource.includes("\\usepackage{xparse}")) {
+    return overrideCiteprocCommands(latexSource);
+  }
+
+  return overrideCiteprocCommands(
+    latexSource.replace("\\usepackage{xcolor}", "\\usepackage{xparse}\n\\usepackage{xcolor}")
+  );
+}
+
+function overrideCiteprocCommands(latexSource) {
+  const marker = "\\newcommand{\\CSLIndent}[1]{\\hspace{\\cslhangindent}#1}";
+  const override = `${marker}\n\\RenewDocumentCommand\\citeproc{mm}{\\hyperlink{#1}{#2}}`;
+  let updated = latexSource;
+
+  if (!updated.includes("\\RenewDocumentCommand\\citeproc{mm}{\\hyperlink{#1}{#2}}") && updated.includes(marker)) {
+    updated = updated.replace(marker, override);
+  }
+
+  updated = updated.replace(/(^|\n)(\\bibitem(?:\[[^\]]*\])?\{([^}]+)\})/g, (match, prefix, bibitem, key) => {
+    return `${prefix}\\hypertarget{${key}}{}\n${bibitem}`;
+  });
+
+  return updated;
 }
