@@ -271,12 +271,18 @@
 \definecolor{linktextblue}{HTML}{2E6DA4}
 \definecolor{tableheaderbg}{HTML}{F0F2F4}
 \definecolor{table-rule-color}{HTML}{999999}
+\definecolor{calloutnotebg}{HTML}{EAF3FF}
+\definecolor{calloutnoteborder}{HTML}{2B6CB0}
 \definecolor{calloutsuccessbg}{HTML}{EAF6EC}
 \definecolor{calloutsuccessborder}{HTML}{2F7D4A}
 \definecolor{calloutwarningbg}{HTML}{FFF4DE}
 \definecolor{calloutwarningborder}{HTML}{B87400}
-\definecolor{callouttipbg}{HTML}{E8F4FF}
-\definecolor{callouttipborder}{HTML}{0E6BA8}
+\definecolor{callouttipbg}{HTML}{EAF7F0}
+\definecolor{callouttipborder}{HTML}{2D7A46}
+\definecolor{calloutcautionbg}{HTML}{FDEDE8}
+\definecolor{calloutcautionborder}{HTML}{C2410C}
+\definecolor{calloutimportantbg}{HTML}{FCEBEC}
+\definecolor{calloutimportantborder}{HTML}{B42318}
 \definecolor{calloutinfobg}{HTML}{F1EFFC}
 \definecolor{calloutinfoborder}{HTML}{5D4E9D}
 \definecolor{codeblockbg}{HTML}{F4F7FA}
@@ -419,11 +425,56 @@
   after skip=8pt
 }
 
+\newtcolorbox{notebox}{
+  enhanced,
+  breakable,
+  colback=calloutnotebg,
+  colframe=calloutnoteborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
 \newtcolorbox{warningbox}{
   enhanced,
   breakable,
   colback=calloutwarningbg,
   colframe=calloutwarningborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\newtcolorbox{cautionbox}{
+  enhanced,
+  breakable,
+  colback=calloutcautionbg,
+  colframe=calloutcautionborder,
+  boxrule=0.7pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.2mm,
+  bottom=1.2mm,
+  before skip=8pt,
+  after skip=8pt
+}
+
+\newtcolorbox{importantbox}{
+  enhanced,
+  breakable,
+  colback=calloutimportantbg,
+  colframe=calloutimportantborder,
   boxrule=0.7pt,
   arc=1mm,
   left=2mm,

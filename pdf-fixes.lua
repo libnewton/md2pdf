@@ -1,8 +1,11 @@
 local callouts = {
-  success = "Success",
-  warning = "Warning",
-  tip = "Tip",
-  info = "Info",
+  success = { title = "Success", env = "successbox" },
+  note = { title = "Note", env = "notebox" },
+  tip = { title = "Tip", env = "tipbox" },
+  warning = { title = "Warning", env = "warningbox" },
+  caution = { title = "Caution", env = "cautionbox" },
+  important = { title = "Important", env = "importantbox" },
+  info = { title = "Info", env = "infobox" },
 }
 
 local function load_data_file(name)
@@ -996,7 +999,8 @@ function Div(el)
   end
 
   local blocks = pandoc.List:new(el.content)
-  local title = pandoc.Inlines({ pandoc.Str(callouts[class_name]) })
+  local callout = callouts[class_name]
+  local title = pandoc.Inlines({ pandoc.Str(callout.title) })
 
   if #blocks > 0 and blocks[1].t == "Header" then
     title = blocks[1].content
@@ -1005,7 +1009,7 @@ function Div(el)
 
   blocks:insert(1, pandoc.Para({ pandoc.Strong(title) }))
 
-  local env = class_name .. "box"
+  local env = callout.env
   local out = pandoc.List:new({ pandoc.RawBlock("latex", "\\begin{" .. env .. "}") })
   for _, block in ipairs(blocks) do
     out:insert(block)
