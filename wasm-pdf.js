@@ -1,4 +1,4 @@
-const TEXLIVE_ENDPOINT = "/texlive-assets/";
+const TEXLIVE_ENDPOINT = "../texlive-assets/";
 const SUPPORT_FILES = [
   "eisvogel.latex",
   "header.tex",
