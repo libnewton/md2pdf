@@ -64,7 +64,7 @@ export function createPdfBuilder({
       ...mediaFiles
     });
 
-    let latexSource = result.stdout || "";
+    let latexSource = sanitizeHighlightedCodeLatex(result.stdout || "");
     if (mediaFiles["bib.bib"]) {
       latexSource = prepareCiteprocLatex(latexSource);
     }
@@ -196,6 +196,13 @@ function normalizeLegacyMarkdown(markdown, mediaFiles) {
   }
 
   return normalized;
+}
+
+function sanitizeHighlightedCodeLatex(latexSource) {
+  return String(latexSource).replace(
+    /(\\begin\{Highlighting\}(?:\[[^\]]*\])?\n?)([\s\S]*?)(\\end\{Highlighting\})/g,
+    (_, start, content, end) => `${start}${content.replace(/\$/g, "\\textdollar{}")}${end}`
+  );
 }
 
 async function fetchText(name) {

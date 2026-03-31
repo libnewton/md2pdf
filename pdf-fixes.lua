@@ -691,11 +691,110 @@ end
 -- placeholder so that compilation always succeeds.
 local unicode_to_latex = load_data_file("pdf-fixes-unicode-map.lua")
 
+-- Plain-text fallbacks for Unicode codepoints inside verbatim/code blocks.
+-- LaTeX commands cannot be used inside fancyvrb Verbatim environments, so
+-- we map characters to their closest ASCII visual equivalents instead.
+local unicode_to_plaintext = {
+  -- Box drawing → ASCII art
+  [0x2500] = "-", [0x2501] = "=",
+  [0x2502] = "|", [0x2503] = "|",
+  [0x250C] = "+", [0x250D] = "+", [0x250E] = "+", [0x250F] = "+",
+  [0x2510] = "+", [0x2511] = "+", [0x2512] = "+", [0x2513] = "+",
+  [0x2514] = "+", [0x2515] = "+", [0x2516] = "+", [0x2517] = "+",
+  [0x2518] = "+", [0x2519] = "+", [0x251A] = "+", [0x251B] = "+",
+  [0x251C] = "+", [0x251D] = "+", [0x251E] = "+", [0x251F] = "+",
+  [0x2520] = "+", [0x2521] = "+", [0x2522] = "+", [0x2523] = "+",
+  [0x2524] = "+", [0x2525] = "+", [0x2526] = "+", [0x2527] = "+",
+  [0x2528] = "+", [0x2529] = "+", [0x252A] = "+", [0x252B] = "+",
+  [0x252C] = "+", [0x252D] = "+", [0x252E] = "+", [0x252F] = "+",
+  [0x2530] = "+", [0x2531] = "+", [0x2532] = "+", [0x2533] = "+",
+  [0x2534] = "+", [0x2535] = "+", [0x2536] = "+", [0x2537] = "+",
+  [0x2538] = "+", [0x2539] = "+", [0x253A] = "+", [0x253B] = "+",
+  [0x253C] = "+", [0x253D] = "+", [0x253E] = "+", [0x253F] = "+",
+  [0x2540] = "+", [0x2541] = "+", [0x2542] = "+", [0x2543] = "+",
+  [0x2544] = "+", [0x2545] = "+", [0x2546] = "+", [0x2547] = "+",
+  [0x2548] = "+", [0x2549] = "+", [0x254A] = "+", [0x254B] = "+",
+  -- Dashes and hyphens
+  [0x2010] = "-", [0x2011] = "-", [0x2012] = "--",
+  [0x2013] = "--", [0x2014] = "---", [0x2015] = "---",
+  -- Quotes
+  [0x2018] = "'", [0x2019] = "'", [0x201A] = ",",
+  [0x201B] = "'", [0x201C] = '"', [0x201D] = '"',
+  [0x201E] = '"', [0x201F] = '"',
+  [0x00AB] = "<<", [0x00BB] = ">>",
+  [0x2039] = "<", [0x203A] = ">",
+  -- Ellipsis
+  [0x2026] = "...",
+  -- Spaces (keep as regular space)
+  [0x00A0] = " ", [0x2002] = " ", [0x2003] = "  ", [0x2004] = " ",
+  [0x2005] = " ", [0x2006] = " ", [0x2007] = " ", [0x2008] = " ",
+  [0x2009] = " ", [0x200A] = "", [0x202F] = " ", [0x205F] = " ",
+  -- Invisible / zero-width
+  [0x200B] = "", [0x200C] = "", [0x200D] = "", [0x200E] = "",
+  [0x200F] = "", [0x202A] = "", [0x202B] = "", [0x202C] = "",
+  [0x202D] = "", [0x202E] = "", [0x2060] = "", [0x2061] = "",
+  [0x2062] = "", [0x2063] = "", [0x2064] = "", [0xFEFF] = "",
+  -- Arrows
+  [0x2190] = "<-", [0x2192] = "->", [0x2194] = "<->",
+  [0x21D0] = "<=", [0x21D2] = "=>", [0x21D4] = "<=>",
+  [0x2191] = "^", [0x2193] = "v",
+  -- Math / symbols
+  [0x00B1] = "+/-", [0x00D7] = "x", [0x00F7] = "/",
+  [0x2022] = "*", [0x2023] = ">",
+  [0x2713] = "[v]", [0x2714] = "[v]", [0x2717] = "[x]", [0x2718] = "[x]",
+  [0x2610] = "[ ]", [0x2611] = "[x]", [0x2612] = "[x]",
+  [0x25A0] = "#", [0x25A1] = "[]", [0x25CB] = "o", [0x25CF] = "@",
+  [0x2605] = "*", [0x2606] = "*",
+  -- Currency
+  [0x20AC] = "EUR", [0x00A3] = "GBP", [0x00A5] = "JPY",
+  -- Misc
+  [0x00A9] = "(c)", [0x00AE] = "(R)", [0x2122] = "(TM)",
+  [0x00B0] = "deg", [0x2032] = "'", [0x2033] = '"',
+  [0x00B7] = ".",
+}
+
+-- Replace unicode codepoints in text destined for verbatim/code environments.
+-- Uses plain ASCII fallbacks since LaTeX commands don't work in Verbatim.
+local function replace_unicode_for_codeblock(text)
+  local out = {}
+  local changed = false
+  for _, codepoint in utf8.codes(text) do
+    local plain = unicode_to_plaintext[codepoint]
+    if plain then
+      out[#out + 1] = plain
+      changed = true
+    elseif codepoint > 0x024F then
+      -- Beyond Latin Extended-B: not safe for inputenc in verbatim
+      out[#out + 1] = "?"
+      changed = true
+    else
+      out[#out + 1] = utf8.char(codepoint)
+    end
+  end
+  if changed then
+    return table.concat(out)
+  end
+  return nil
+end
+
 
 -- Characters in the Latin-1 supplement (U+00C0..U+00FF) are generally handled
 -- by T1 fontenc + inputenc utf8, so we only need to worry about codepoints
 -- above that range (plus a few specific ones already in the table above).
 local function replace_unicode_for_latex(text)
+  local latex_text_replacements = {
+    ["\\"] = "\\textbackslash{}",
+    ["{"] = "\\{",
+    ["}"] = "\\}",
+    ["#"] = "\\#",
+    ["$"] = "\\$",
+    ["%"] = "\\%",
+    ["&"] = "\\&",
+    ["_"] = "\\_",
+    ["~"] = "\\textasciitilde{}",
+    ["^"] = "\\textasciicircum{}",
+  }
+
   local codepoints = {}
   for _, codepoint in utf8.codes(text) do
     codepoints[#codepoints + 1] = codepoint
@@ -724,7 +823,8 @@ local function replace_unicode_for_latex(text)
         out[#out + 1] = "?"
         changed = true
       else
-        out[#out + 1] = utf8.char(codepoint)
+        local ch = utf8.char(codepoint)
+        out[#out + 1] = latex_text_replacements[ch] or ch
       end
       i = i + 1
     end
@@ -877,6 +977,12 @@ function CodeBlock(el)
 
   if not has_class(el, "numberLines") then
     el.classes:insert("numberLines")
+  end
+
+  -- Replace Unicode characters that would cause inputenc errors in Verbatim
+  local replaced = replace_unicode_for_codeblock(el.text)
+  if replaced then
+    el.text = replaced
   end
 
   return el

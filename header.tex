@@ -256,6 +256,56 @@
   }%
 }
 
+% Box drawing character approximations using LaTeX rules.
+% Used by the Lua filter for box drawing chars in non-verbatim contexts.
+\newcommand{\mdruleh}{\rule[0.35ex]{0.7em}{0.4pt}}
+\newcommand{\mdrulev}{\rule[-0.2ex]{0.4pt}{1.1ex}}
+\newcommand{\mdcornertl}{\rule[0.35ex]{0.35em}{0.4pt}\rule[-0.2ex]{0.4pt}{0.55ex}}
+\newcommand{\mdcornertr}{\rule[-0.2ex]{0.4pt}{0.55ex}\rule[0.35ex]{0.35em}{0.4pt}}
+\newcommand{\mdcornerbl}{\rule[-0.2ex]{0.4pt}{0.55ex}\rule[0.35ex]{0.35em}{0.4pt}}
+\newcommand{\mdcornerbr}{\rule[0.35ex]{0.35em}{0.4pt}\rule[-0.2ex]{0.4pt}{0.55ex}}
+\newcommand{\mdteel}{\rule[-0.2ex]{0.4pt}{1.1ex}\rule[0.35ex]{0.35em}{0.4pt}}
+\newcommand{\mdteer}{\rule[0.35ex]{0.35em}{0.4pt}\rule[-0.2ex]{0.4pt}{1.1ex}}
+\newcommand{\mdteet}{\rule[0.35ex]{0.7em}{0.4pt}\hspace{-0.35em}\rule[-0.2ex]{0.4pt}{0.55ex}}
+\newcommand{\mdteeb}{\rule[-0.2ex]{0.4pt}{0.55ex}\hspace{-0.4pt}\rule[0.35ex]{0.7em}{0.4pt}}
+\newcommand{\mdcross}{\rule[-0.2ex]{0.4pt}{1.1ex}\hspace{-0.4pt}\rule[0.35ex]{0.7em}{0.4pt}}
+
+% Invisible formatting character declarations for pdfTeX safety net.
+% These are already handled by the Lua filter, but declared here as fallback
+% in case any slip through (e.g., from template or metadata).
+\ifPDFTeX
+  \DeclareUnicodeCharacter{200B}{}%  ZERO WIDTH SPACE
+  \DeclareUnicodeCharacter{200C}{}%  ZERO WIDTH NON-JOINER
+  \DeclareUnicodeCharacter{200D}{}%  ZERO WIDTH JOINER
+  \DeclareUnicodeCharacter{200E}{}%  LEFT-TO-RIGHT MARK
+  \DeclareUnicodeCharacter{200F}{}%  RIGHT-TO-LEFT MARK
+  \DeclareUnicodeCharacter{200A}{}%  HAIR SPACE
+  \DeclareUnicodeCharacter{202A}{}%  LEFT-TO-RIGHT EMBEDDING
+  \DeclareUnicodeCharacter{202B}{}%  RIGHT-TO-LEFT EMBEDDING
+  \DeclareUnicodeCharacter{202C}{}%  POP DIRECTIONAL FORMATTING
+  \DeclareUnicodeCharacter{202D}{}%  LEFT-TO-RIGHT OVERRIDE
+  \DeclareUnicodeCharacter{202E}{}%  RIGHT-TO-LEFT OVERRIDE
+  \DeclareUnicodeCharacter{2060}{}%  WORD JOINER
+  \DeclareUnicodeCharacter{FEFF}{}%  BOM / ZERO WIDTH NO-BREAK SPACE
+  \DeclareUnicodeCharacter{2010}{-}%  HYPHEN
+  \DeclareUnicodeCharacter{2011}{-}%  NON-BREAKING HYPHEN
+  \DeclareUnicodeCharacter{2012}{--}% FIGURE DASH
+  \DeclareUnicodeCharacter{2015}{---}% HORIZONTAL BAR
+  \DeclareUnicodeCharacter{2027}{\ensuremath{\cdot}}% HYPHENATION POINT
+  \DeclareUnicodeCharacter{2500}{\mdruleh}%  BOX HORIZ
+  \DeclareUnicodeCharacter{2502}{\mdrulev}%  BOX VERT
+  \DeclareUnicodeCharacter{250C}{\mdcornertl}%
+  \DeclareUnicodeCharacter{2510}{\mdcornertr}%
+  \DeclareUnicodeCharacter{2514}{\mdcornerbl}%
+  \DeclareUnicodeCharacter{2518}{\mdcornerbr}%
+  \DeclareUnicodeCharacter{251C}{\mdteel}%
+  \DeclareUnicodeCharacter{2524}{\mdteer}%
+  \DeclareUnicodeCharacter{252C}{\mdteet}%
+  \DeclareUnicodeCharacter{2534}{\mdteeb}%
+  \DeclareUnicodeCharacter{253C}{\mdcross}%
+\fi
+
+
 \RedeclareSectionCommand[
   beforeskip=1.25\baselineskip,
   afterskip=0.5\baselineskip
