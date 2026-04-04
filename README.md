@@ -15,7 +15,7 @@
 
 ## Tech stack
 
-- Vanilla HTML, CSS, and JavaScript
+- Vanilla HTML, CSS, and JavaScript.
 - [Pandoc](https://pandoc.org/) compiled to WebAssembly for Markdown -> LaTeX
 - [SwiftLaTeX](https://github.com/SwiftLaTeX/SwiftLaTeX) / PdfTeX in the browser for PDF generation
 - [EasyMDE](https://easymde.ibrahimcesar.cloud/) and [CodeMirror](https://codemirror.net/) for the editor experience
