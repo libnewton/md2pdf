@@ -4,7 +4,7 @@
 
 `md2pdf` is a static, browser-first Markdown to PDF tool. It converts Markdown locally with Pandoc and SwiftLaTeX, shows a live PDF preview, and keeps image handling inside the browser.
 
-- **Site**: [https://md2pdf.codeberg.page/](https://md2pdf.codeberg.page/)
+- **Site**: [https://markdown2pdf.github.io/](https://markdown2pdf.github.io/)
 
 ## Features
 
