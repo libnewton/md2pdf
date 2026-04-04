@@ -22,7 +22,7 @@ jobs:
         uses: yesolutions/mirror-action@v0.7.0
         with:
           REMOTE: "https://github.com/markdown2pdf/markdown2pdf.github.io.git"
-          GIT_USERNAME: ${{ github.actor }}
+          GIT_USERNAME: libnewton
           GIT_PASSWORD: ${{ secrets.OTHER_REPO_TOKEN }}
           PUSH_ALL_REFS: "false"
           GIT_REF: "HEAD:refs/heads/main"
