@@ -64,14 +64,14 @@
           <div class="library-header">
             <div>
               <h2>Image Library</h2>
-              <p>Paste, drop, or double-click to browse for image embeds and aliases.</p>
+              <p>Paste, drop, or double-click to browse for image and PDF embeds and aliases.</p>
             </div>
           </div>
 
-          <input id="libraryFileInput" type="file" accept="image/*" multiple hidden />
+          <input id="libraryFileInput" type="file" accept="image/*,application/pdf,.pdf" multiple hidden />
 
           <div id="libraryDropzone" class="library-dropzone" tabindex="0">
-            Drop images here, paste, or double-click to browse.
+            Drop images or PDFs here, paste, or double-click to browse.
           </div>
 
           <div id="imageLibrary" class="image-library" aria-live="polite"></div>

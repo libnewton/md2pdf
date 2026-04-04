@@ -1,4 +1,5 @@
 const TEXLIVE_ENDPOINT = "../texlive-assets/";
+const DEFAULT_RUNTIME_FILES = Array.from({ length: 11 }, (_, index) => `backgrounds/background${index + 1}.pdf`);
 const SUPPORT_FILES = [
   "eisvogel.latex",
   "header.tex",
@@ -77,7 +78,8 @@ export function createPdfBuilder({
     texEngine.setEngineMainFile("document.tex");
     writeMemFsFile(texEngine, "document.tex", latexSource);
 
-    for (const runtimeFile of runtimeFiles) {
+    const bundledRuntimeFiles = Array.from(new Set([...DEFAULT_RUNTIME_FILES, ...runtimeFiles]));
+    for (const runtimeFile of bundledRuntimeFiles) {
       const response = await fetch(runtimeFile);
       if (!response.ok) {
         throw new Error(`Unable to load ${runtimeFile}`);

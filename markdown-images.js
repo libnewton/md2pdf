@@ -6,6 +6,11 @@ const DB_NAME = "md2pdf-image-library";
 const DB_STORE = "assets";
 const DB_VERSION = 1;
 const LATEX_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "pdf"]);
+const LIBRARY_FILE_PATTERN = /\.(png|jpe?g|gif|svg|webp|bmp|pdf)$/i;
+
+export function isLibraryAssetFile(file) {
+  return Boolean(file) && (isLibraryAssetMime(file.type) || LIBRARY_FILE_PATTERN.test(file.name || ""));
+}
 
 export function createImageStore({ onChange = () => {} } = {}) {
   const assets = new Map();
@@ -23,7 +28,7 @@ export function createImageStore({ onChange = () => {} } = {}) {
   };
 
   async function addFiles(files) {
-    const incoming = files.filter(isImageFile);
+    const incoming = files.filter(isLibraryAssetFile);
     const addedAssets = [];
 
     for (const file of incoming) {
@@ -236,8 +241,8 @@ export function createImageStore({ onChange = () => {} } = {}) {
     }
 
     const type = response.headers.get("content-type") || "";
-    if (!type.startsWith("image/")) {
-      throw new Error(`Unsupported image type for ${url}`);
+    if (!isLibraryAssetMime(type)) {
+      throw new Error(`Unsupported asset type for ${url}`);
     }
 
     const blob = await response.blob();
@@ -555,8 +560,8 @@ async function fetchImageBlob(url) {
   }
 
   const type = response.headers.get("content-type") || "";
-  if (!type.startsWith("image/")) {
-    throw new Error(`Unsupported image type for ${url}`);
+  if (!isLibraryAssetMime(type)) {
+    throw new Error(`Unsupported asset type for ${url}`);
   }
 
   return response.blob();
@@ -819,8 +824,9 @@ function defaultNameForMime(mime) {
   return `image.${extensionFromMime(mime)}`;
 }
 
-function isImageFile(file) {
-  return Boolean(file) && ((file.type || "").startsWith("image/") || /\.(png|jpe?g|gif|svg|webp|bmp)$/i.test(file.name || ""));
+function isLibraryAssetMime(mime) {
+  const normalized = String(mime || "").toLowerCase().split(";")[0].trim();
+  return normalized === "application/pdf" || normalized.startsWith("image/");
 }
 
 function isValidReference(reference) {

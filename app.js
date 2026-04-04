@@ -1,4 +1,4 @@
-import { ASSET_DRAG_TYPE, createImageStore } from "./markdown-images.js";
+import { ASSET_DRAG_TYPE, createImageStore, isLibraryAssetFile } from "./markdown-images.js";
 import { createPdfBuilder } from "./wasm-pdf.js";
 import { replaceRefs } from "./compiler-utils.js";
 
@@ -250,7 +250,7 @@ function bindLibraryDragEvents() {
     event.stopPropagation();
     const removed = await imageStore.removeEntry(deleteButton.dataset.removeId);
     if (removed) {
-      setStatus("Removed image from library");
+      setStatus("Removed file from library");
     }
   });
 
@@ -339,7 +339,7 @@ function bindLibraryDragEvents() {
     }
 
     imageStore.assignAlias(unresolvedCard.dataset.unresolvedId, assetId);
-    setStatus(`Aliased ${unresolvedCard.dataset.aliasName} to library image`);
+    setStatus(`Aliased ${unresolvedCard.dataset.aliasName} to library file`);
   });
 }
 
@@ -357,7 +357,7 @@ async function buildPdf() {
 
     const sourceMarkdown = getMarkdown();
     const refs = replaceRefs(sourceMarkdown);
-    setStatus("Resolving images...");
+    setStatus("Resolving library files...");
     const resolved = await imageStore.resolveMarkdown(refs.txt);
 
     if (refs.bib) {
@@ -389,7 +389,7 @@ function renderLibrary(snapshot) {
   if (!snapshot.assets.length && !snapshot.unresolved.length) {
     const empty = document.createElement("div");
     empty.className = "library-empty";
-    empty.textContent = "Stored images will appear here.";
+    empty.textContent = "Stored files will appear here.";
     fragment.appendChild(empty);
   }
 
@@ -404,6 +404,7 @@ function renderLibrary(snapshot) {
       draggable: true,
       id: asset.id,
       imgSrc: asset.previewUrl,
+      mime: asset.blob.type,
       kind: "asset",
       subtitle: asset.generatedName,
       title: asset.originalName
@@ -417,6 +418,7 @@ function renderLibrary(snapshot) {
       draggable: false,
       id: unresolved.id,
       imgSrc: unresolved.previewUrl,
+      mime: unresolved.blob.type,
       kind: "unresolved",
       subtitle: "CORS blocked the remote image. Add or drop the matching file here.",
       title: unresolved.aliasName
@@ -426,7 +428,7 @@ function renderLibrary(snapshot) {
   elements.imageLibrary.replaceChildren(fragment);
 }
 
-function createCard({ badge, detail, draggable, id, imgSrc, kind, subtitle, title }) {
+function createCard({ badge, detail, draggable, id, imgSrc, kind, mime, subtitle, title }) {
   const card = document.createElement("article");
   card.className = `library-item is-${kind}`;
   card.draggable = draggable;
@@ -441,10 +443,17 @@ function createCard({ badge, detail, draggable, id, imgSrc, kind, subtitle, titl
   const thumb = document.createElement("div");
   thumb.className = "library-thumb";
 
-  const image = document.createElement("img");
-  image.src = imgSrc;
-  image.alt = title;
-  thumb.appendChild(image);
+  if (String(mime || "").toLowerCase().split(";")[0].trim() === "application/pdf") {
+    const label = document.createElement("span");
+    label.className = "library-thumb-label";
+    label.textContent = "PDF";
+    thumb.appendChild(label);
+  } else {
+    const image = document.createElement("img");
+    image.src = imgSrc;
+    image.alt = title;
+    thumb.appendChild(image);
+  }
 
   const body = document.createElement("div");
   body.className = "library-body";
@@ -460,7 +469,7 @@ function createCard({ badge, detail, draggable, id, imgSrc, kind, subtitle, titl
   deleteButton.className = "library-delete";
   deleteButton.dataset.removeId = id;
   deleteButton.type = "button";
-  deleteButton.title = "Remove image";
+  deleteButton.title = "Remove file";
   deleteButton.textContent = "x";
 
   header.append(name, deleteButton);
@@ -494,9 +503,9 @@ async function addIncomingFiles(fileList) {
 
   const added = await imageStore.addFiles(files);
   if (added.count) {
-    setStatus(`Added ${added.count} image${added.count === 1 ? "" : "s"}`);
+    setStatus(`Added ${added.count} file${added.count === 1 ? "" : "s"}`);
   } else {
-    setStatus("No image files found");
+    setStatus("No supported files found");
   }
 
   return added;
@@ -616,7 +625,7 @@ function getClipboardFiles(clipboardData) {
   return Array.from(clipboardData?.items || [])
     .filter((item) => item.kind === "file")
     .map((item) => item.getAsFile())
-    .filter((file) => file && file.type.startsWith("image/"));
+    .filter(isLibraryAssetFile);
 }
 
 function safeStorageGet(key) {
