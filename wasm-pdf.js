@@ -169,7 +169,7 @@ function createPandocOptions(hidePageNumbers, {
   }
 
   return {
-    filters: ["pdf-fixes.lua", ...extraFilters],
+    filters: [ ...extraFilters,"pdf-fixes.lua"],
     from: createInputFormat({ implicitFigures, hasBibliography }),
     "highlight-style": "vscode-light.theme",
     "include-in-header": ["header.tex", ...extraHeaders],
