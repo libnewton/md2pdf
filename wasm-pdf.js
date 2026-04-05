@@ -66,6 +66,7 @@ export function createPdfBuilder({
     });
 
     let latexSource = sanitizeHighlightedCodeLatex(result.stdout || "");
+    latexSource = sanitizeTextcompLatex(latexSource);
     if (mediaFiles["bib.bib"]) {
       latexSource = prepareCiteprocLatex(latexSource);
     }
@@ -191,6 +192,8 @@ function createInputFormat({ implicitFigures, hasBibliography }) {
 function normalizeLegacyMarkdown(markdown, mediaFiles) {
   let normalized = String(markdown || "");
 
+  normalized = escapePlainAngleBracketNotes(normalized);
+
   if (mediaFiles["bib.bib"]) {
     normalized = normalized
       .replace(/\\n(?=\s*(?:!\[|[#>*-]|\d+\.))/g, "\n")
@@ -205,6 +208,23 @@ function sanitizeHighlightedCodeLatex(latexSource) {
     /(\\begin\{Highlighting\}(?:\[[^\]]*\])?\n?)([\s\S]*?)(\\end\{Highlighting\})/g,
     (_, start, content, end) => `${start}${content.replace(/\$/g, "\\textdollar{}")}${end}`
   );
+}
+
+function escapePlainAngleBracketNotes(markdown) {
+  return String(markdown).replace(
+    /(^|\n)([ \t]*)<([A-Za-z0-9][^>\n]*\s[^>\n]*)>[ \t]*(?=\n|$)/g,
+    (match, prefix, indent, body) => {
+      if (/[=/"']/.test(body)) {
+        return match;
+      }
+
+      return `${prefix}${indent}&lt;${body}&gt;`;
+    }
+  );
+}
+
+function sanitizeTextcompLatex(latexSource) {
+  return String(latexSource).replace(/\\textquotesingle(?:\{\})?\s*/g, "'");
 }
 
 async function fetchText(name) {
