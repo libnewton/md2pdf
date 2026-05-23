@@ -704,6 +704,63 @@ kbd {
   white-space: pre-wrap;
 }
 
+.new-version-content {
+  max-width: 520px;
+}
+
+.new-version-body {
+  color: var(--text);
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.new-version-body p {
+  margin: 0 0 0.8rem;
+}
+
+.new-version-body a:not(.primary-link) {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.16rem;
+}
+
+.new-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.primary-link,
+.ghost-button {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.8rem;
+  padding: 0.72rem 1.2rem;
+}
+
+.primary-link {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+}
+
+.primary-link:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.ghost-button {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 @media (max-width: 1100px) {
   .workspace {
     grid-template-columns: 1fr;

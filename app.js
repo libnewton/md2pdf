@@ -4,9 +4,12 @@ import { replaceRefs } from "./compiler-utils.js";
 
 const STORAGE_KEYS = {
   markdown: "md2pdf-content",
+  newVersionDismissedAt: "md2pdf-new-version-dismissed-at",
   noPageNumbers: "md2pdf-no-page-numbers",
   useSourceSans: "md2pdf-use-source-sans"
 };
+
+const NEW_VERSION_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DEFAULT_MARKDOWN = `# Fast Tour
 
@@ -60,6 +63,10 @@ const elements = {
   libraryDropzone: el("libraryDropzone"),
   libraryFileInput: el("libraryFileInput"),
   markdown: el("markdown"),
+  newVersionDismiss: el("newVersionDismiss"),
+  newVersionDismissX: el("newVersionDismissX"),
+  newVersionModal: el("newVersionModal"),
+  newVersionOpen: el("newVersionOpen"),
   noPageNumbers: el("noPageNumbers"),
   pdfFrame: el("pdfFrame"),
   resetWorkspaceBtn: el("resetWorkspaceBtn"),
@@ -86,6 +93,7 @@ async function init() {
   initEditor();
   restorePreferences();
   bindEvents();
+  showNewVersionModalIfDue();
   try {
     await imageStore.restore();
   } catch (error) {
@@ -195,8 +203,23 @@ function bindEvents() {
     }
   });
 
+  elements.newVersionDismiss.addEventListener("click", dismissNewVersionModal);
+  elements.newVersionDismissX.addEventListener("click", dismissNewVersionModal);
+  elements.newVersionOpen.addEventListener("click", dismissNewVersionModal);
+  elements.newVersionModal.addEventListener("click", (event) => {
+    if (event.target.closest('a[href="https://markdown2pdf.gitlab.io"]')) {
+      dismissNewVersionModal();
+      return;
+    }
+
+    if (event.target === elements.newVersionModal) {
+      dismissNewVersionModal();
+    }
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      dismissNewVersionModal();
       closeErrorModal();
       return;
     }
@@ -611,6 +634,26 @@ function setMarkdown(value) {
 
 function setStatus(message) {
   elements.status.textContent = message;
+}
+
+function showNewVersionModalIfDue() {
+  const dismissedAt = Number(safeStorageGet(STORAGE_KEYS.newVersionDismissedAt));
+  if (Number.isFinite(dismissedAt) && Date.now() - dismissedAt < NEW_VERSION_DISMISS_MS) {
+    return;
+  }
+
+  elements.newVersionModal.classList.add("open");
+  elements.newVersionModal.setAttribute("aria-hidden", "false");
+}
+
+function dismissNewVersionModal() {
+  if (!elements.newVersionModal.classList.contains("open")) {
+    return;
+  }
+
+  safeStorageSet(STORAGE_KEYS.newVersionDismissedAt, String(Date.now()));
+  elements.newVersionModal.classList.remove("open");
+  elements.newVersionModal.setAttribute("aria-hidden", "true");
 }
 
 function showErrorModal(text) {

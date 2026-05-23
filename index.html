@@ -103,6 +103,23 @@
     </div>
   </div>
 
+  <div id="newVersionModal" class="modal new-version-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="newVersionTitle">
+    <div class="modal-content new-version-content" role="document">
+      <div class="modal-header">
+        <h2 id="newVersionTitle">New version available</h2>
+        <button id="newVersionDismissX" type="button" title="Close">x</button>
+      </div>
+      <div class="modal-body new-version-body">
+        <p>This old Markdown to PDF app is no longer the current version.</p>
+        <p>The new version is running at <a href="https://markdown2pdf.gitlab.io">markdown2pdf.gitlab.io</a>.</p>
+        <div class="new-version-actions">
+          <a id="newVersionOpen" class="primary-link" href="https://markdown2pdf.gitlab.io">Open new version</a>
+          <button id="newVersionDismiss" type="button" class="ghost-button">Stay here</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/codemirror/lib/codemirror.js"></script>
   <script src="vendor/codemirror/addon/mode/overlay.js"></script>
   <script src="vendor/codemirror/addon/mode/multiplex.js"></script>
